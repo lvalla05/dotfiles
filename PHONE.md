@@ -1,46 +1,39 @@
 # Phone
 
-Desk is Orca. The harness in a pane rotates. Phone is the Claude iOS app, Code tab.
-Do not rebuild ntfy plus Tailscale plus Termius plus Orca-mobile.
+Desk is Orca plus Obsidian. The harness in a pane rotates.
+The phone is a capture and approval surface, not a second ADE.
 
-Orca iOS push is broken in the background (stablyai/orca #8129). It is not the front door.
+## Apps
 
-## Stack
+Install from the App Store after 1Password.
 
-**Primary.** Claude iOS, Code tab. Remote Control for files on this Mac. Dispatch (Pro/Max,
-desktop app open) for a task you message from the phone.
+1. **1Password** first. Fill and unlock everything else.
+2. **Obsidian.** The vault. Daily capture, courses, research, session notes.
+   Sync must be on before you trust the phone as a second copy.
+3. **Things 3.** Today's list. One inbox, not five.
+4. **Superhuman** and **Fantastical.** Mail and calendar faces. Drafts stay drafts.
+5. **Wispr Flow.** Keyboard. Full Access.
+6. **Claude** and **ChatGPT** if you want a remote into a Mac session.
+   Claude Code tab uses Remote Control. ChatGPT uses Codex Remote.
+   Neither is required for the vault or for Orca on the desk.
+7. **Canvas** and **Teams** for school and work.
 
-**Fallback.** Codex Remote in the ChatGPT app. Set it up once. Do not use it daily.
+Do not connect Gmail or Google Calendar connectors to a consumer claude.ai
+account. A cloud routine includes every connected connector.
 
-**Not the link.** ntfy, Pushover, Orca mobile, Hermes, Termius as the daily driver.
+## Mac half of a remote session
 
-## Mac
+If you use Claude Remote Control:
 
-1. Cask `claude` is declared. Dispatch needs the desktop app open.
-2. `claude --version` is 2.1.260 or later (`claude-code@latest`).
-3. This must print nothing:
+- Cask `claude` is declared. Dispatch needs the desktop app open.
+- `claude-code@latest` is the CLI.
+- Run `claude` once in a project directory. Trust does not save for `$HOME`.
+- Long sessions: `claude remote-control` inside `tmux`.
+- Sleep stops Remote Control. Lid open plus power, or lid closed plus a display.
 
-   ```sh
-   env | grep -E 'DO_NOT_TRACK|DISABLE_TELEMETRY|CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC|DISABLE_GROWTHBOOK|ANTHROPIC_BASE_URL|ANTHROPIC_API_KEY|ANTHROPIC_AUTH_TOKEN'
-   ```
+If you use Codex Remote, the ChatGPT desktop app is the host. Same lid rule.
 
-4. Run `claude` once in a project directory. Trust does not save for `$HOME`.
-5. `home/.claude/settings.json` already has Remote Control at startup and both push toggles.
-6. Long sessions: `claude remote-control` inside `tmux`.
+## Check once
 
-## Phone
-
-1. 1Password, then Claude by Anthropic, same claude.ai account. Allow notifications.
-2. Wispr Flow keyboard, Full Access.
-3. Code tab. This Mac should show as a device card.
-4. Hit a permission on purpose, lock the phone, confirm the push. Repeat under a Focus
-   that silences notifications.
-
-Do not connect Gmail or Google Calendar to the claude.ai account. A cloud routine includes
-every connected connector, and per-tool Blocked is Team/Enterprise only.
-
-## Lid shut
-
-Sleep stops Remote Control. Lid open plus power, or lid closed plus an external display.
-Anything that must run while the machine sleeps is a cloud session, and it does not see
-the vault.
+Start a task that will need a yes. Lock the phone. Confirm the push arrives.
+Repeat under a Focus that silences notifications.

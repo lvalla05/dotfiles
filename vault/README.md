@@ -1,40 +1,44 @@
 # Vault
 
-This is the memory system. It is not the machine.
+Obsidian is the memory surface. This repo is the machine. They are not the same folder.
 
-The machine is https://github.com/lvalla05/dotfiles. This folder is the layout for
-the Obsidian vault. After a wipe, restore the real vault from Obsidian Sync or a
-private remote. If you are starting empty, copy this folder to `~/Documents/Vault`
-and open it in Obsidian.
+After a wipe, restore the real vault from Obsidian Sync or a private remote.
+If you are starting empty, copy this folder to `~/Documents/Vault` and open it in Obsidian.
+Fill `CANON.md`. Do not commit notes, transcripts, or life context to the public machine repo.
 
-Do not commit vault notes, session transcripts, prompts, or life context to the
-dotfiles repo. That repo is public.
+## Layout
 
-## What lives here
+Karpathy's 2026 pattern: dump sources, let an LLM compile a wiki, use Obsidian as the viewer.
+Tina Huang's pattern: daily log plus a to-do that both live as markdown the agent can read.
+Lauren Tan's pattern: prove work on the real artifact, keep a map of how to drive it.
 
 | Path | Job |
 |---|---|
-| `CANON.md` | Standing facts an agent may load. Short. No secrets. |
-| `Inbox/` | Unsorted captures. Empty this. Do not let it become the system. |
-| `Sessions/` | One note per agent run: date, harness, prompt, outcome, files touched. |
-| `Prompts/` | Reusable prompt text you want again. Not a chat log. |
-| `Decisions/` | Dated choices and why. One file per decision. |
-| `Projects/` | One folder per live project. Link out. Do not duplicate the git repo. |
+| `CANON.md` | Standing facts. Short. Loaded first. No secrets. |
+| `Daily/` | One note per day. Capture. Cross off. |
+| `raw/` | Immutable sources. Papers, clips, transcripts, screenshots. Never edit in place. |
+| `wiki/` | Compiled pages. The LLM writes these. You rarely touch them. |
+| `Inbox/` | Unsorted. Empty it. |
+| `Sessions/` | One note per agent run: harness, prompt, outcome. |
+| `Prompts/` | Reusable prompt text. Not a chat log. |
+| `Decisions/` | Dated choices and why. |
+| `Courses/` | One folder per class. |
+| `Work/` | Current job, not the public repo. |
+| `Career/` | Applications, target roles, narrative. |
+| `Research/` | Topics the wiki has not absorbed yet. |
+| `Projects/` | Status and links. Code stays in git. |
 
 ## Rules for agents
 
-1. Read `CANON.md` before acting on life context.
-2. After a non-trivial run, write `Sessions/YYYY-MM-DD-short-name.md`. Include the
-   exact prompt and the harness (Orca pane, Claude Code, Codex, Grok Build, other).
-3. If a decision should survive the next wipe, put it in `Decisions/`, not in a
-   chat and not in the public dotfiles.
-4. Secrets stay in 1Password. If a note would need a token, stop.
-5. Health, family, grades, and anything that must not be in a public git remote
-   stay in this vault. They never go in `lvalla05/dotfiles`.
+1. Read `CANON.md` first.
+2. Ingest into `raw/`. Compile into `wiki/`. Do not treat chat as memory.
+3. After a non-trivial run, write `Sessions/YYYY-MM-DD-short-name.md` with the verbatim prompt and the harness.
+4. Decisions that must survive a wipe go in `Decisions/`.
+5. Secrets stay in 1Password. Stop if a note would need a token.
+6. The same vault is valid from Orca, Claude Code, Codex, Grok Build, Hermes, or Pi. Do not write per-harness copies.
 
 ## After a Mac reset
 
 1. Sign into Obsidian. Sync or clone the private vault.
 2. Point the orchestrator at that vault path plus https://github.com/lvalla05/dotfiles.
-3. The orchestrator reads `CANON.md` and `SETUP.md` in the machine repo. It does
-   not reconstruct memory from GitHub.
+3. The orchestrator does not reconstruct your life from GitHub.

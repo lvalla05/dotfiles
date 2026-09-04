@@ -2,12 +2,12 @@
 
 Standing facts. Keep this short. Agents may load it. No secrets.
 
-- Name:
 - GitHub: lvalla05
-- Machine repo: https://github.com/lvalla05/dotfiles
+- Machine: https://github.com/lvalla05/dotfiles
 - ADE: Orca. Harnesses rotate. Permission-bypass is on.
+- Git: HTTPS plus `gh auth login`. SSH is optional.
 - Memory: this vault. Not the public repo.
-- Secrets: 1Password. Automic Vault for agent-held tokens.
-- Do not send, purchase, publish, merge, or delete without a yes in the moment.
+- Secrets: 1Password.
 
-Add lines as facts settle. Delete lines that go stale.
+Fill the rest after restore. School, work, targets, constraints.
+Delete lines that go stale.

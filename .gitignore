@@ -24,3 +24,17 @@ vault/Decisions/**
 !vault/Decisions/README.md
 vault/Projects/**
 !vault/Projects/README.md
+vault/Daily/**
+!vault/Daily/README.md
+vault/raw/**
+!vault/raw/README.md
+vault/wiki/**
+!vault/wiki/README.md
+vault/Courses/**
+!vault/Courses/README.md
+vault/Work/**
+!vault/Work/README.md
+vault/Career/**
+!vault/Career/README.md
+vault/Research/**
+!vault/Research/README.md

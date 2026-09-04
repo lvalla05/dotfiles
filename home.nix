@@ -47,6 +47,11 @@ in
       init.defaultBranch = "main";
       pull.rebase = false;
       push.autoSetupRemote = true;
+      credential = {
+        "https://github.com" = {
+          helper = "!gh auth git-credential";
+        };
+      };
     };
   };
 

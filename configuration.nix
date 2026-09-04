@@ -109,12 +109,12 @@
     # Homebrew 6 requires vendor taps to be trusted; an untrusted tap's casks
     # are silently skipped and its brews abort the switch. Hence trusted = true.
     taps = [
-      { name = "automic-vault/isotopes"; trusted = true; }  # Automic Vault and its hardened gh
-      { name = "stablyai/orca"; trusted = true; }           # Orca's cask lives in the vendor tap
+      { name = "automic-vault/isotopes"; trusted = true; }
+      { name = "stablyai/orca"; trusted = true; }
     ];
     brews = [
-      "automic-vault/isotopes/gh-cli"  # gh, with its token held by Automic Vault (conflicts with plain gh; keep one)
-      "herdr"                          # terminal multiplexer; config in home/.config/herdr
+      "gh"     # official GitHub CLI. Do not install the Automic isotope; it prompts on every call.
+      "herdr"  # terminal multiplexer; config in home/.config/herdr
     ];
     casks = [
       # identity and secrets

@@ -47,6 +47,8 @@ for c in '"claude"' '"claude-code@latest"' '"chatgpt"' '"codex"' '"grok-build"' 
   grep -q "$c" "$DIR/configuration.nix" || say_fail "configuration.nix: cask $c is missing"
 done
 grep -q 'stablyai/orca/orca' "$DIR/configuration.nix" || say_fail "configuration.nix: cask stablyai/orca/orca is missing"
+grep -qE '"gh"' "$DIR/configuration.nix" || say_fail "configuration.nix: official gh formula is missing"
+if grep -q 'gh-cli' "$DIR/configuration.nix"; then say_fail "configuration.nix: Automic gh-cli prompts on every call; use official gh"; fi
 
 # Grok bypass stays allowed. Do not flip this to true.
 [ -f "$DIR/home/.grok/requirements.toml" ] || say_fail "home/.grok/requirements.toml is missing"

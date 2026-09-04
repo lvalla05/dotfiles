@@ -1,10 +1,7 @@
 # First hour on a wiped Mac
 
 This repo is the machine. Secrets live in 1Password. Memory lives in Obsidian.
-Re-sign Automic Vault after the switch. Do not migrate from Time Machine.
-
-Erase All Content and Settings keeps the OS already installed. Turn Beta Updates off
-in Software Update first if you want public 27.0 when it ships.
+GitHub is HTTPS plus `gh`. Do not migrate from Time Machine.
 
 ## Before you click erase
 
@@ -14,12 +11,14 @@ This public repo does not.
 
 ## Setup Assistant
 
-1. Not Now on migration. Local short name **`likhithvalla`** (hardcoded in `flake.nix`).
+1. Not Now on migration. Local short name **`likhithvalla`**.
 2. Apple Account from the phone. iCloud Keychain on. Touch ID on.
-3. Install 1Password from the website. Sign in. Settings > Developer > Use the SSH agent.
-   Integrate with 1Password CLI, Touch ID. The socket this repo declares is
-   `~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock` (no `group.` segment).
-4. Chrome. Sign in. It is the only browser Claude in Chrome supports.
+3. Install 1Password from the website. Sign in.
+   Settings > Developer > Use the SSH agent. Integrate with 1Password CLI, Touch ID.
+   The socket this repo declares is
+   `~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock`
+   (no `group.` segment).
+4. Chrome. Sign in.
 
 ## Bootstrap
 
@@ -37,14 +36,13 @@ App Store before the next switch (`mas` cannot buy).
 
 ## After the switch, in this order
 
-1. `ssh -T git@github.com` must greet you. If it does not, the 1Password agent is off.
-2. Launch Orca. Leave Agent Permissions on the vendor default so every harness starts
-   with permission-bypass.
-3. Sign into whichever harnesses you open. None of them is the permanent primary.
-4. Open Obsidian. Sign into Sync (or clone the private vault). The layout is in `vault/`
-   in this repo if you are starting empty. Point the orchestrator at that vault for
-   memory, session notes, and prompts. Never commit those notes here.
-5. `claude` once inside a project directory so workspace trust saves if you want the
-   phone link.
-6. Accessibility and mic prompts for Wispr Flow and Raycast. Those cannot be declared.
+1. `gh auth login` with HTTPS, not SSH. `gh auth setup-git`. Then
+   `gh api user --jq .login` must print `lvalla05`. Push and pull do not wait on SSH.
+2. Optional: `ssh -T git@github.com` after the 1Password agent is on. If it fails, keep using HTTPS.
+3. Launch Orca. Leave Agent Permissions on the vendor default (permission-bypass).
+4. Sign into whichever harnesses you open. None of them is the permanent primary.
+5. Open Obsidian. Sign into Sync (or clone the private vault). If you are starting empty,
+   copy `vault/` from this repo to `~/Documents/Vault` and open that. Fill `CANON.md`.
+   Point the orchestrator at the vault plus this git repo. Never commit vault notes here.
+6. Accessibility and mic prompts for Wispr Flow and Raycast.
 7. Continue with `PHONE.md`.
