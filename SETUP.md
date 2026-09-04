@@ -9,13 +9,7 @@ to land on public 27.0 when it ships.
 
 ## Before you click erase
 
-Push this repo to GitHub if it has no origin. After erase, this clone is gone.
-
-```sh
-cd ~/orca/projects/dotfiles
-git remote -v
-# if empty, create origin and git push -u origin main
-```
+This repo is already at https://github.com/lvalla05/dotfiles. After erase, clone that.
 
 Everything else on this disk is treated as disposable.
 
