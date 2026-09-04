@@ -6,6 +6,10 @@ Homebrew apps intentionally update on rebuild.
 Orca is the ADE. The CLI in a pane is whichever harness the job needs.
 None of them is permanent. Memory lives in the private `brain` repo, opened in Obsidian.
 
+The [working loop](WORKFLOW.md) is one coordinator, bounded research/implementation workers,
+optional local HTML review, and one scheduler per automation. It does not require another agent
+platform or a global npm toolchain.
+
 ## What you get
 
 - macOS defaults, Touch ID sudo, zap Homebrew

@@ -157,6 +157,16 @@ Open a **new** terminal. `rebuild` is an alias.
    signed-in account and loaded MCP servers. Grok Build can import Claude and Cursor MCP settings;
    review those imports for duplicates or unwanted access. Remote Orca hosts need their own
    provider and `gh` authentication; this Mac's login does not transfer.
+   Follow `WORKFLOW.md` for the one-coordinator research and implementation loop. Enable Orca
+   Orchestration in Experimental settings if needed; test a bounded read-only worker and its
+   structured completion before depending on it. Keep recurring automations disabled until their
+   inputs, output, duplicate-run behavior, and notifications have been tested.
+   Inspect each project's setup hook. Dotfiles and brain are not npm projects: clear a generic
+   `pnpm install` hook if Orca supplies or restores one. In Settings, select the repository and
+   host, then Worktree Hooks → Setup Script; clear the command and leave the field to save it.
+   Check Advanced / Script Source for a shared `orca.yaml` hook as well. A placeholder is not a
+   configured command. Do not put `bootstrap.sh` or `rebuild.sh`
+   in a worktree setup hook; creating a worker must not activate or zap the whole machine.
 
 6. Restore the Spiral MCP for Codex, then complete its explicit OAuth login:
 

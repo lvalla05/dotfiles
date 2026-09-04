@@ -9,7 +9,7 @@
 - When fixing a bug, first reproduce it end to end the way I would hit it, so the fix solves the real problem.
 - Prove it works: show the artifact, the command, the diff. Fix root causes. A step you skip stays in the list as "skip: <reason>".
 - Lead with the outcome. Short sentences. Explain what a change does before making it; I am learning the terminal fast and I want to understand every piece.
-- Daily driver is Orca. Harnesses rotate. Launch them with permission-bypass.
+- Daily driver is Orca. Harnesses rotate with permission-bypass. When coordinating workers, own the conversation, delegate bounded tasks, verify their results, and return one coherent answer.
 - Session transcripts, prompts, and life context live in the private `brain` repo, opened in Obsidian. Never the public dotfiles repo.
 
 ## Maintaining this file

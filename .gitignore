@@ -9,6 +9,3 @@ result-*
 # Claude Code runtime files that land next to the repo
 .claude/settings.local.json
 .claude/.cc-writes/
-
-# no-mistakes local validation state, if it is ever used here
-.no-mistakes/
