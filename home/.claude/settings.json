@@ -9,7 +9,7 @@
   "autoContinueAtUsageLimit": true,
   "cleanupPeriodDays": 180,
   "timeZone": "America/New_York",
-  "timeFormat": "12h",
+  "timeFormat": "12-hour",
   "workflowSizeGuideline": "medium",
   "permissions": {
     "blockReadsOutsideWorkingDirectories": true,

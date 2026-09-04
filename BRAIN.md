@@ -9,8 +9,8 @@ The system has separate stores with separate jobs:
 
 `brain` starts by preserving dated sources. Do not add a router, memory database, role forest, or automatic compiler until a real repeated workflow proves it is needed. One Orca session is the orchestrator and one process writes the vault at a time.
 
-Obsidian Sync moves the working vault between Apple devices. GitHub is private Mac-side history. Do not run a competing Git writer on the phone.
+Obsidian Sync, configured after reset, moves the working vault between Apple devices. GitHub is private Mac-side history. Do not run a competing Git writer on the phone. Disable separate provider/CLI memory stores using the checklist in `SETUP.md`; ordinary chat retention is a different control.
 
-After a wipe, restore 1Password first, rebuild this repo, authenticate official `gh`, verify `lvalla05/brain` is private, clone it to `~/orca/projects/brain`, and open that exact folder in Obsidian. Add `dotfiles` and `brain` to Orca as separate projects so personal context is loaded only for work that needs it.
+After a wipe, follow `SETUP.md` from Safari through authentication and verification. Open `~/orca/projects/brain` itself in Obsidian. Add `dotfiles` and `brain` to Orca as separate projects so personal context is loaded only for work that needs it.
 
 Never put secret values, 1Password exports, recovery codes, account numbers, private keys, or identity-document contents in either GitHub repository.

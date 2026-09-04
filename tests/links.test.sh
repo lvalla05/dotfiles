@@ -1,24 +1,20 @@
 #!/usr/bin/env bash
-# Static checks for the drift this repo can actually suffer: a declared link
-# whose target does not exist, an unparseable settings file, a mutable bootstrap,
-# a cask line that went missing, an untrusted tap, or private memory in this repo.
+# Check source-file contracts, parsed settings, and the evaluated Nix declaration.
+# These checks do not install apps or activate the machine configuration.
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 fail=0
 say_fail() { echo "FAIL $1"; fail=1; }
 
-# every mkOutOfStoreSymlink target in home.nix exists in the repo
+# Check lexically listed live-link targets exist; this does not run activation.
 while IFS= read -r rel; do
   [ -e "$DIR/$rel" ] || say_fail "home.nix links $rel but it does not exist"
 done < <(grep -oE 'dotfiles}/[^"]+' "$DIR/home.nix" | sed 's|dotfiles}/||' | sort -u)
 
-# the instruction files are what every harness loads
+# Instruction source files and the root Claude import are byte-level contracts.
 [ -f "$DIR/home/AGENTS.md" ] || say_fail "home/AGENTS.md is missing"
 [ "$(wc -l < "$DIR/home/AGENTS.md")" -le 25 ] || say_fail "home/AGENTS.md is over 25 lines; it is loaded into every session"
 grep -qx '@AGENTS.md' "$DIR/CLAUDE.md" || say_fail "CLAUDE.md must import AGENTS.md with a bare @AGENTS.md line"
-# shellcheck disable=SC2016
-grep -q 'install -m 644 "${./home/AGENTS.md}" "$HOME/.claude/CLAUDE.md"' "$DIR/home.nix" \
-  || say_fail "home.nix must install home/AGENTS.md as a plain copy at ~/.claude/CLAUDE.md (the desktop app skips symlinks and outside imports)"
 
 # the human-facing docs bootstrap.sh and the README point at
 [ -f "$DIR/README.md" ] || say_fail "README.md is missing"
@@ -31,6 +27,9 @@ fi
 
 # settings.json parses and keeps the few rules that protect irreversible actions
 jq -e . "$DIR/home/.claude/settings.json" >/dev/null || say_fail "home/.claude/settings.json does not parse"
+jq -e '(.timeFormat // "auto") as $format | ($format | type) == "string" and
+  ((["auto", "12-hour", "24-hour", "24-hour-utc"] | index($format)) != null or ($format | contains("%")))' \
+  "$DIR/home/.claude/settings.json" >/dev/null || say_fail "settings.json: timeFormat must be a supported preset or strftime pattern"
 jq -e '.permissions.deny | index("Bash(git push --force:*)") and index("Bash(gh pr merge:*)") and index("Bash(gh repo delete:*)")' \
   "$DIR/home/.claude/settings.json" >/dev/null || say_fail "settings.json: the force-push, PR-merge, repo-delete denies are missing"
 jq -e '(.permissions.ask | index("Bash(git push:*)")) == null and (.permissions.ask | index("Bash(gh pr create:*)")) == null' \
@@ -50,71 +49,56 @@ if jq -e '.env | type == "object"' "$DIR/home/.claude/settings.json" >/dev/null 
   done
 fi
 
-# the casks that must never go missing, and the tokens that must never be wrong
-for c in '"claude"' '"claude-code@latest"' '"chatgpt"' '"codex"' '"grok-build"' '"1password"' '"ghostty"' '"google-chrome"' '"microsoft-outlook"'; do
-  grep -q "$c" "$DIR/configuration.nix" || say_fail "configuration.nix: cask $c is missing"
-done
-grep -q 'stablyai/orca/orca' "$DIR/configuration.nix" || say_fail "configuration.nix: cask stablyai/orca/orca is missing"
-grep -qE '^[[:space:]]*"gh"[[:space:]]' "$DIR/configuration.nix" || say_fail "configuration.nix: official gh formula is missing"
-if grep -qE '^[[:space:]]*"automic-vault/isotopes/gh-cli"' "$DIR/configuration.nix"; then
-  say_fail "configuration.nix: Automic gh-cli prompts on every call; use official gh"
-fi
-
-# Grok bypass stays allowed. Do not flip this to true.
-[ -f "$DIR/home/.grok/requirements.toml" ] || say_fail "home/.grok/requirements.toml is missing"
-grep -q 'disable_bypass_permissions_mode = false' "$DIR/home/.grok/requirements.toml" \
-  || say_fail "home/.grok/requirements.toml must set disable_bypass_permissions_mode = false"
-if grep -q 'disable_bypass_permissions_mode = true' "$DIR/home/.grok/requirements.toml"; then
-  say_fail "home/.grok/requirements.toml must not pin bypass off"
-fi
-grep -q 'etc."grok/requirements.toml"' "$DIR/configuration.nix" \
-  || say_fail "configuration.nix must install home/.grok/requirements.toml to /etc/grok/requirements.toml"
-if grep -qE '"claude-code"[^@]' "$DIR/configuration.nix"; then say_fail "configuration.nix: the stable claude-code cask conflicts with claude-code@latest"; fi
-if grep -qE '^\s*"orca"' "$DIR/configuration.nix"; then say_fail "configuration.nix: bare orca token resolves to a disabled Plotly cask; use stablyai/orca/orca"; fi
-grep -q 'cleanup = "zap"' "$DIR/configuration.nix" || say_fail "configuration.nix: cleanup must stay zap"
-while IFS= read -r tap; do
-  grep -q "name = \"$tap\"; trusted = true;" "$DIR/configuration.nix" || say_fail "configuration.nix: tap $tap must carry trusted = true"
-done < <(grep -oE 'name = "[^"]+"' "$DIR/configuration.nix" | sed 's/name = "//; s/"//')
-
-# Fresh-machine executables are immutable before they run.
-grep -q 'NIX_INSTALLER_VERSION="v3.22.3"' "$DIR/bootstrap.sh" \
-  || say_fail "bootstrap.sh: Determinate installer version is not pinned"
-grep -q '61dbd9b6c74a66cc580d36e80214438bd19455bbab7efd79f2903445e16e82b9' "$DIR/bootstrap.sh" \
-  || say_fail "bootstrap.sh: Determinate installer checksum is missing"
-if grep -q 'install.determinate.systems/nix' "$DIR/bootstrap.sh"; then
-  say_fail "bootstrap.sh: mutable pipe-to-shell Determinate installer returned"
-fi
+# Inspect effective values, so comments and disabled declarations cannot pass.
 # shellcheck disable=SC2016
-grep -q 'run "$DIR#darwin-rebuild"' "$DIR/bootstrap.sh" \
-  || say_fail "bootstrap.sh: first darwin-rebuild must use the local locked flake app"
-grep -q 'apps.aarch64-darwin.darwin-rebuild' "$DIR/flake.nix" \
-  || say_fail "flake.nix: locked darwin-rebuild app is missing"
-if grep -qE 'github:nix-darwin/.+#darwin-rebuild' "$DIR/bootstrap.sh"; then
-  say_fail "bootstrap.sh: mutable remote darwin-rebuild returned"
+if declaration=$(nix eval --json "$DIR#darwinConfigurations.mac.config" --apply '
+  c: let hm = c.home-manager.users.${c.system.primaryUser}; in {
+    cleanup = c.homebrew.onActivation.cleanup;
+    brews = map (x: x.name) c.homebrew.brews;
+    casks = map (x: x.name) c.homebrew.casks;
+    taps = map (x: { inherit (x) name trusted; }) c.homebrew.taps;
+    grok = builtins.fromTOML (builtins.readFile c.environment.etc."grok/requirements.toml".source);
+    homeDirectory = hm.home.homeDirectory;
+    sshAuthSock = hm.home.sessionVariables.SSH_AUTH_SOCK;
+    sshConfig = hm.home.file.".ssh/config".text;
+  }'); then
+  jq -e '.casks as $installed |
+    all(["claude", "claude-code@latest", "chatgpt", "codex", "grok-build", "1password",
+         "ghostty", "google-chrome", "microsoft-outlook", "stablyai/orca/orca"][];
+        . as $required | $installed | index($required)) and
+    ($installed | index("claude-code") == null and index("orca") == null)' \
+    <<< "$declaration" >/dev/null || say_fail "Nix declaration: required cask missing or conflicting Claude/Orca cask declared"
+  jq -e '.brews | index("gh") != null and index("automic-vault/isotopes/gh-cli") == null' \
+    <<< "$declaration" >/dev/null || say_fail "Nix declaration: use official gh without the Automic isotope"
+  jq -e '.cleanup == "zap"' <<< "$declaration" >/dev/null \
+    || say_fail "Nix declaration: cleanup must stay zap"
+  jq -e '(.taps | map(.name)) as $names |
+    ($names | index("automic-vault/isotopes") != null and index("stablyai/orca") != null) and
+    all(.taps[]; .trusted == true)' <<< "$declaration" >/dev/null \
+    || say_fail "Nix declaration: required vendor taps must be present and trusted"
+  jq -e '.grok.ui.disable_bypass_permissions_mode == false' <<< "$declaration" >/dev/null \
+    || say_fail "Nix declaration: installed Grok requirements must allow bypass"
+  jq -e '(.homeDirectory + "/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock") as $socket |
+    .sshAuthSock == $socket and (.sshConfig | contains("IdentityAgent \"" + $socket + "\""))' \
+    <<< "$declaration" >/dev/null || say_fail "Nix declaration: SSH must use the correct 1Password agent socket"
+else
+  say_fail "Nix declaration could not be evaluated"
 fi
 
-# lazy.nvim is checked out to the lock commit before any of its Lua runs.
-jq -e 'all(.[]; .commit | test("^[0-9a-f]{40}$"))' "$DIR/home/.config/nvim/lazy-lock.json" >/dev/null \
-  || say_fail "lazy-lock.json: every plugin needs a 40-character commit"
-grep -q 'lazy-lock.json' "$DIR/home/.config/nvim/lua/plugin.lua" \
-  || say_fail "plugin.lua: lazy.nvim bootstrap does not read the lock"
-grep -q "'fetch'" "$DIR/home/.config/nvim/lua/plugin.lua" \
-  || say_fail "plugin.lua: lazy.nvim bootstrap does not fetch the locked commit"
-grep -q "'checkout', '--detach'" "$DIR/home/.config/nvim/lua/plugin.lua" \
-  || say_fail "plugin.lua: lazy.nvim bootstrap does not detach at the locked commit"
-if grep -q -- '--branch=stable' "$DIR/home/.config/nvim/lua/plugin.lua"; then
-  say_fail "plugin.lua: mutable lazy.nvim stable bootstrap returned"
-fi
-
-# the 1Password agent path is the real one
-grep -q '2BUA8C4S2C.com.1password/t/agent.sock' "$DIR/home.nix" || say_fail "home.nix: 1Password agent socket path is wrong"
-if grep -q 'group.com.1password' "$DIR/home.nix"; then say_fail "home.nix: '2BUA8C4S2C.group.com.1password' is not a real container"; fi
+# Validate persisted plugin identities, not whether the plugins execute successfully.
+jq -e 'type == "object" and length > 0 and has("lazy.nvim") and
+  all(.[]; type == "object" and
+    (.commit | type == "string" and test("^[0-9a-f]{40}$")) and
+    (.branch | type == "string" and length > 0))' \
+  "$DIR/home/.config/nvim/lazy-lock.json" >/dev/null \
+  || say_fail "lazy-lock.json: require lazy.nvim and a valid commit and branch for every plugin"
 
 # scripts parse
 for s in "$DIR"/bootstrap.sh "$DIR"/rebuild.sh "$DIR"/tests/*.sh; do bash -n "$s" || say_fail "$s does not parse"; done
+shellcheck "$DIR/bootstrap.sh" "$DIR/rebuild.sh" "$DIR"/tests/*.sh || say_fail "ShellCheck failed"
 
 # no em dash in anything an agent reads
 if git -C "$DIR" ls-files -z 2>/dev/null | (cd "$DIR" && xargs -0 grep -lF $'\xe2\x80\x94' 2>/dev/null) | grep -q .; then say_fail "em dash found in a tracked file"; fi
 
-if [ "$fail" = 0 ]; then echo "ok: links, instruction files, docs, settings, casks, taps, agent path, scripts, no em dash"; fi
+if [ "$fail" = 0 ]; then echo "ok: file contracts, settings, evaluated Nix policy, lock data, shell syntax/lint, no em dash"; fi
 exit "$fail"

@@ -132,8 +132,8 @@ in
 
   # npm never needs sudo and never writes into the nix store.
   home.file.".npmrc".text = "prefix=${config.home.homeDirectory}/.local\n";
-  # SSH through 1Password's agent: GitHub and Tailscale SSH unlock with the
-  # fingerprint, no key file on disk, no passphrase typed.
+  # Ordinary SSH uses keys stored in 1Password. GitHub git stays on HTTPS.
+  # Tailscale SSH authenticates through tailnet identity, not this agent.
   home.file.".ssh/config".text = ''
     Host *
       IdentityAgent "${opAgent}"

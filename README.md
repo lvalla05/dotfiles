@@ -1,6 +1,7 @@
 # dotfiles
 
-Nix-darwin plus home-manager. One command. A wiped Mac comes back the same.
+Nix-darwin plus home-manager restore the declared Mac setup. Nix inputs are locked;
+Homebrew apps intentionally update on rebuild.
 
 Orca is the ADE. The CLI in a pane is whichever harness the job needs.
 None of them is permanent. Memory lives in the private `brain` repo, opened in Obsidian.
@@ -17,13 +18,20 @@ None of them is permanent. Memory lives in the private `brain` repo, opened in O
 
 ## Fresh Mac
 
+Start in Safari with the [complete reset and restore guide](SETUP.md). It includes the
+ChatGPT/Codex install, Computer Use permissions, a copy-paste agent handoff, backup gates,
+and post-restore verification. Obsidian Sync is configured after reset.
+
+Before these commands, finish the guide's Command Line Tools and App Store prerequisites:
+
 ```sh
 git clone https://github.com/lvalla05/dotfiles.git ~/orca/projects/dotfiles
 cd ~/orca/projects/dotfiles
 ./bootstrap.sh
 ```
 
-Then `SETUP.md` (1Password, official `gh`, private brain, Orca, Obsidian). Then `PHONE.md`.
+Continue with `SETUP.md` after the switch, then `PHONE.md`. The bootstrap cannot restore
+account sign-ins, approve macOS permissions, or recover secrets for you.
 
 Check without applying:
 
@@ -31,7 +39,17 @@ Check without applying:
 nix flake check --no-build
 nix build .#darwinConfigurations.mac.system --dry-run
 bash tests/links.test.sh
+bash tests/bootstrap.test.sh
 ```
+
+For changes to the Nix configuration, build the complete system without activating it:
+
+```sh
+nix build .#darwinConfigurations.mac.system --no-link
+```
+
+Evaluation and dry-run checks do not prove that a build succeeds. A build does not apply macOS
+settings, install Homebrew apps, or verify authenticated Mac/iPhone workflows.
 
 ## Daily use
 

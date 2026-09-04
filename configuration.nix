@@ -128,7 +128,7 @@
       "cursor"              # bundled with SuperGrok Heavy; editor and cloud agents when a project earns them
       # the agent CLIs
       "claude-code@latest"  # current Claude Code channel; the stable cask must not coexist. Its zap stanza deletes ~/.claude.json: never drop this line under zap.
-      "codex"               # OpenAI Codex CLI; reads ~/.codex/AGENTS.md; the reviewer and second opinion
+      "codex"               # OpenAI Codex CLI; reads ~/.codex/AGENTS.md; one of the harnesses Orca can open
       "grok-build"          # Grok Build CLI. One of the harnesses Orca can open.
       "stablyai/orca/orca"  # the ADE: worktrees, parallel sessions, diff review. Harness in a pane is whatever the job needs. Leave Agent Permissions on the vendor default (bypass flags). Never the bare token "orca" (that is a disabled Plotly cask).
       # daily tools
@@ -155,7 +155,7 @@
     # Mac App Store apps. `mas` cannot buy: sign in to the App Store and own
     # the app before the first rebuild, or the switch fails on that line.
     masApps = {
-      "Things 3" = 904280696;              # today's list, fed one way from the brief; durable context stays in brain
+      "Things 3" = 904280696;              # today's tasks; automation uses supported AppleScript, Shortcuts, or URL commands
       "1Password for Safari" = 1569813296; # fill and passkeys in Safari
     };
   };
