@@ -1,17 +1,16 @@
 # First hour on a wiped Mac
 
-This repo is the machine. Almanac, machine-v1, and old agent sessions are not restored.
-Secrets live in 1Password. Re-sign Automic Vault after the switch. Do not migrate from Time Machine.
+This repo is the machine. Secrets live in 1Password. Memory lives in Obsidian.
+Re-sign Automic Vault after the switch. Do not migrate from Time Machine.
 
-Erase All Content and Settings keeps the OS already installed. This Mac is on a 27 seed
-(`sw_vers`). That is acceptable. Turn Beta Updates off in Software Update first if you want
-to land on public 27.0 when it ships.
+Erase All Content and Settings keeps the OS already installed. Turn Beta Updates off
+in Software Update first if you want public 27.0 when it ships.
 
 ## Before you click erase
 
-This repo is already at https://github.com/lvalla05/dotfiles. After erase, clone that.
-
-Everything else on this disk is treated as disposable.
+This repo is at https://github.com/lvalla05/dotfiles. After erase, clone that.
+Confirm Obsidian Sync (or a private git remote on the vault) actually has the vault.
+This public repo does not.
 
 ## Setup Assistant
 
@@ -41,19 +40,11 @@ App Store before the next switch (`mas` cannot buy).
 1. `ssh -T git@github.com` must greet you. If it does not, the 1Password agent is off.
 2. Launch Orca. Leave Agent Permissions on the vendor default so every harness starts
    with permission-bypass.
-3. Sign into whichever harnesses you open (Grok, Claude, Codex, Hermes, Pi). None of
-   them is the permanent primary.
-4. `claude` once inside a project directory so workspace trust saves if you want the
+3. Sign into whichever harnesses you open. None of them is the permanent primary.
+4. Open Obsidian. Sign into Sync (or clone the private vault). The layout is in `vault/`
+   in this repo if you are starting empty. Point the orchestrator at that vault for
+   memory, session notes, and prompts. Never commit those notes here.
+5. `claude` once inside a project directory so workspace trust saves if you want the
    phone link.
-5. Accessibility and mic prompts for Wispr Flow and Raycast. Those cannot be declared.
-6. Continue with `PHONE.md`.
-
-## What is gone on purpose
-
-- `~/almanac` and `github.com/lvalla05/almanac`
-- `~/Developer/machine-v1`
-- Claude, Grok, Codex, and Cursor session transcripts
-- ntfy, Termius-as-the-front-door, Orca mobile as the phone link
-- firstmate
-
-Do not clone any of that back.
+6. Accessibility and mic prompts for Wispr Flow and Raycast. Those cannot be declared.
+7. Continue with `PHONE.md`.

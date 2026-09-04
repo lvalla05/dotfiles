@@ -12,3 +12,15 @@ result-*
 
 # no-mistakes local validation state, if it is ever used here
 .no-mistakes/
+
+# Live vault notes never belong in this public repo. Keep the templates only.
+vault/Inbox/**
+!vault/Inbox/README.md
+vault/Sessions/**
+!vault/Sessions/README.md
+vault/Prompts/**
+!vault/Prompts/README.md
+vault/Decisions/**
+!vault/Decisions/README.md
+vault/Projects/**
+!vault/Projects/README.md

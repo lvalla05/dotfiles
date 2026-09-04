@@ -18,8 +18,6 @@
   programs.zsh.enableGlobalCompInit = false;
   programs.zsh.enableBashCompletion = false;
 
-  # Grok Build pin. Bypass stays allowed. Orca launches grok with
-  # --permission-mode bypassPermissions. Do not flip this to true.
   environment.etc."grok/requirements.toml".source = ./home/.grok/requirements.toml;
 
   system.stateVersion = 6;
@@ -116,7 +114,7 @@
     ];
     brews = [
       "automic-vault/isotopes/gh-cli"  # gh, with its token held by Automic Vault (conflicts with plain gh; keep one)
-      "herdr"                          # the agent multiplexer in the terminal (Kun Chen's tmux replacement); config in home/.config/herdr
+      "herdr"                          # terminal multiplexer; config in home/.config/herdr
     ];
     casks = [
       # identity and secrets

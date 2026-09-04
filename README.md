@@ -1,8 +1,9 @@
 # dotfiles
 
-This is the only machine repo. Almanac is dead. There is no second tree.
+This is the only machine repo.
 
 Nix-darwin plus home-manager. One command. A wiped Mac comes back the same.
+Memory, session notes, and prompts live in the Obsidian vault, not here.
 
 The layout is Kun Chen's (https://youtu.be/5N-okeDdIuI). Orca is the ADE. The CLI in a pane is
 whatever harness that job needs (Claude Code, Codex, Grok Build, Hermes, Pi). None of them is
@@ -28,7 +29,7 @@ cd ~/orca/projects/dotfiles
 ./bootstrap.sh
 ```
 
-Read `SETUP.md` for the clicks no file can make (1Password SSH agent, Orca sign-in).
+Read `SETUP.md` for the clicks no file can make (1Password SSH agent, Orca, Obsidian).
 Read `PHONE.md` for the phone.
 
 Check without applying:

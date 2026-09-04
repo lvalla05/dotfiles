@@ -23,6 +23,7 @@ grep -q 'install -m 644 "${./home/AGENTS.md}" "$HOME/.claude/CLAUDE.md"' "$DIR/h
 [ -f "$DIR/README.md" ] || say_fail "README.md is missing"
 [ -f "$DIR/SETUP.md" ] || say_fail "SETUP.md is missing"
 [ -f "$DIR/PHONE.md" ] || say_fail "PHONE.md is missing"
+[ -f "$DIR/vault/README.md" ] || say_fail "vault/README.md is missing"
 
 # settings.json parses and keeps the few rules that protect irreversible actions
 jq -e . "$DIR/home/.claude/settings.json" >/dev/null || say_fail "home/.claude/settings.json does not parse"

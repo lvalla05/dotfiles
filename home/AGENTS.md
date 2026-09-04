@@ -10,6 +10,7 @@
 - Prove it works: show the artifact, the command, the diff. Fix root causes. A step you skip stays in the list as "skip: <reason>".
 - Lead with the outcome. Short sentences. Explain what a change does before making it; I am learning the terminal fast and I want to understand every piece.
 - Daily driver is Orca. Use /poteto-mode when the work needs rigor. Launch all harness with permission-bypass.
+- Session transcripts, prompts, and life context live in the Obsidian vault. Never this repo.
 
 ## Maintaining this file
 

@@ -3,8 +3,7 @@
 Desk is Orca. The harness in a pane rotates. Phone is the Claude iOS app, Code tab.
 Do not rebuild ntfy plus Tailscale plus Termius plus Orca-mobile.
 
-Orca iOS push is still broken in the background (stablyai/orca #8129, 2026-09-02).
-It is not the front door.
+Orca iOS push is broken in the background (stablyai/orca #8129). It is not the front door.
 
 ## Stack
 
