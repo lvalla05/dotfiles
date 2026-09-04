@@ -1,0 +1,13 @@
+# Ghostty. Edit in place; Ghostty reloads on cmd+shift+, (or restart).
+# The font is embedded (JetBrains Mono plus Nerd Font symbols); no font cask needed.
+theme = rose-pine-moon
+font-size = 15
+background-opacity = 0.9
+background-blur = 20
+macos-titlebar-style = hidden
+macos-option-as-alt = true
+mouse-hide-while-typing = true
+window-padding-x = 8
+window-padding-y = 6
+# Tell me when a long-running command finishes while I am elsewhere (OSC 133).
+# Claude Code and Codex emit the sequence; Ghostty raises the notification.
