@@ -4,13 +4,38 @@
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+NIX_INSTALLER_VERSION="v3.22.3"
+NIX_INSTALLER_SHA256="61dbd9b6c74a66cc580d36e80214438bd19455bbab7efd79f2903445e16e82b9"
+NIX_INSTALLER_URL="https://github.com/DeterminateSystems/nix-installer/releases/download/${NIX_INSTALLER_VERSION}/nix-installer-aarch64-darwin"
+NIX_INSTALLER_DIR=""
+NIX_INSTALLER_FILE=""
+
+cleanup_installer() {
+  if [ -n "$NIX_INSTALLER_FILE" ]; then
+    rm -f -- "$NIX_INSTALLER_FILE"
+  fi
+  if [ -n "$NIX_INSTALLER_DIR" ]; then
+    rmdir -- "$NIX_INSTALLER_DIR" 2>/dev/null || true
+  fi
+}
+trap cleanup_installer EXIT
+
+if [ "$(uname -m)" != "arm64" ]; then
+  echo "This flake and pinned installer target Apple silicon (arm64)."
+  exit 1
+fi
 
 echo "==> Step 1: Determinate Nix"
 if command -v nix >/dev/null 2>&1; then
   echo "    nix already installed, skipping"
 else
-  curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix \
-    | sh -s -- install --no-confirm
+  NIX_INSTALLER_DIR="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-nix-installer.XXXXXX")"
+  NIX_INSTALLER_FILE="$NIX_INSTALLER_DIR/nix-installer"
+  curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error \
+    --output "$NIX_INSTALLER_FILE" "$NIX_INSTALLER_URL"
+  printf '%s  %s\n' "$NIX_INSTALLER_SHA256" "$NIX_INSTALLER_FILE" | shasum -a 256 -c -
+  chmod 700 "$NIX_INSTALLER_FILE"
+  "$NIX_INSTALLER_FILE" install --no-confirm
   # shellcheck disable=SC1091
   . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 fi
@@ -43,22 +68,17 @@ else
   echo "    flake.nix already matches \"$REAL_USER\", nothing to do."
 fi
 
-echo "==> Step 4: first darwin-rebuild switch (pinned to nix-darwin-26.05)"
-# darwin-rebuild doesn't exist yet on a fresh machine, so run it straight
-# from the flake this once. After this, rebuild.sh works normally.
-# This fetches the darwin-rebuild tool from the nix-darwin-26.05 release branch,
-# not the exact flake.lock revision. The system config it applies is still pinned
-# by this repo's flake.lock.
-# sudo resets PATH to a secure default that excludes /nix/.../bin, so a
-# freshly installed `nix` would not be found under sudo even though it's
-# on PATH here. Resolve the absolute path first and invoke that instead.
-NIX_BIN="$(command -v nix)"
+echo "==> Step 4: first darwin-rebuild switch (locked by flake.lock)"
+# darwin-rebuild does not exist yet on a fresh machine. The local flake exposes
+# the runner from its locked nix-darwin input, so no mutable branch runs as root.
+NIX_BIN="/nix/var/nix/profiles/default/bin/nix"
+if [ ! -x "$NIX_BIN" ]; then
+  echo "Expected Determinate Nix at $NIX_BIN, but it is missing."
+  exit 1
+fi
 # "mac" is the flake host label - if you renamed it, change it in flake.nix
 # and rebuild.sh too.
-sudo "$NIX_BIN" run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild -- \
-  switch --flake ~/.dotfiles#mac
-# If this still fails with "nix: command not found", open a new terminal
-# (Determinate adds nix to new shells' PATH) and re-run ./bootstrap.sh.
+sudo "$NIX_BIN" run "$DIR#darwin-rebuild" -- switch --flake "$DIR#mac"
 
 echo "==> Done. Open a NEW terminal window (this one has no /run/current-system on its PATH),"
 echo "    then use ./rebuild.sh for future changes. Continue with SETUP.md."

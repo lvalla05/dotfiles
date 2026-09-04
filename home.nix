@@ -22,7 +22,7 @@ in
     neovim
     tmux       # a Remote Control session survives a closed window when it runs in tmux
     shellcheck # the tests lint the shell scripts
-    # node for `npx -y <tool>@<version>` (lavish-axi, backpass); no global npm layer to drift
+    # node for pinned one-off `npx -y <tool>@<version>` calls; no global npm layer to drift
     nodejs
     # the font for editors that do not embed one (Ghostty ships its own).
     # home-manager copies fonts into ~/Library/Fonts/HomeManager; macOS ignores symlinked fonts.
@@ -33,6 +33,7 @@ in
     EDITOR = "nvim";
     SSH_AUTH_SOCK = opAgent;
     ORCA_TELEMETRY_DISABLED = "1";
+    BRAIN_DIR = "${config.home.homeDirectory}/orca/projects/brain";
   };
 
   # Git identity, declared so a fresh machine commits correctly from the first
@@ -105,7 +106,7 @@ in
 
   # One instruction file for every harness.
   # Codex and Grok Build read AGENTS.md natively; ~/.agents/AGENTS.md is the
-  # vendor-neutral path (backpass's canonical target). All live links.
+  # vendor-neutral path. All live links.
   home.file.".agents/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".codex/AGENTS.md".source =

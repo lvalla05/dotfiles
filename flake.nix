@@ -28,6 +28,13 @@
       user = "likhithvalla";
     in
     {
+      # bootstrap.sh uses this app so the first privileged darwin-rebuild comes
+      # from the exact nix-darwin revision in flake.lock.
+      apps.aarch64-darwin.darwin-rebuild = {
+        type = "app";
+        program = "${nix-darwin.packages.aarch64-darwin.darwin-rebuild}/bin/darwin-rebuild";
+      };
+
       darwinConfigurations."mac" = nix-darwin.lib.darwinSystem {
         specialArgs = { inherit user; };
         modules = [

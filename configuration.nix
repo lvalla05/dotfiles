@@ -104,7 +104,7 @@
     # Agent CLIs and GUI apps come from Homebrew, not nixpkgs: the 26.05 pin
     # trails these fast-moving tools by months, while brew tracks upstream.
     # Every entry has its job written beside it. If a line loses its job,
-    # delete the line; zap removes the app. Never remove a line silently.
+    # propose removal; delete it only when the human names it. Zap removes the app.
     #
     # Homebrew 6 requires vendor taps to be trusted; an untrusted tap's casks
     # are silently skipped and its brews abort the switch. Hence trusted = true.
@@ -120,19 +120,19 @@
       # identity and secrets
       "1password"           # the human vault: passwords, TOTP, passkeys, the SSH agent
       "1password-cli"       # op, for the rare scripted read, human-driven
-      "automic-vault/isotopes/automic-vault"  # the agent vault: a secret reaches a tool per approved use and never a file
+      "automic-vault/isotopes/automic-vault"  # optional local delivery and policy layer; 1Password remains the source of truth
       # the AI desktop apps
       "claude"              # Claude desktop: Cowork, Dispatch, scheduled tasks, computer use; the Mac half of the phone link. Do not remove.
       "chatgpt"             # ChatGPT desktop and the Codex app; the Codex Remote host
       "grok-bot"            # Grok Bot desktop (SuperGrok Heavy); read-only researcher, never a mail or calendar hand
       "cursor"              # bundled with SuperGrok Heavy; editor and cloud agents when a project earns them
       # the agent CLIs
-      "claude-code@latest"  # claude on the latest channel (Fable 5.1 and the sandbox need 2.1.257+); the stable cask must not coexist. Its zap stanza deletes ~/.claude.json: never drop this line under zap.
+      "claude-code@latest"  # current Claude Code channel; the stable cask must not coexist. Its zap stanza deletes ~/.claude.json: never drop this line under zap.
       "codex"               # OpenAI Codex CLI; reads ~/.codex/AGENTS.md; the reviewer and second opinion
       "grok-build"          # Grok Build CLI. One of the harnesses Orca can open.
       "stablyai/orca/orca"  # the ADE: worktrees, parallel sessions, diff review. Harness in a pane is whatever the job needs. Leave Agent Permissions on the vendor default (bypass flags). Never the bare token "orca" (that is a disabled Plotly cask).
       # daily tools
-      "ghostty"             # the terminal (1.3: search, command-done notifications, embedded JetBrains Mono); config in home/.config/ghostty
+      "ghostty"             # the terminal; config in home/.config/ghostty
       "google-chrome"       # the logged-in browser; the only browser Claude in Chrome supports
       "wispr-flow"          # dictation into every text field; mic and Accessibility grants are manual
       "raycast"             # launcher, clipboard history, calculator, hyper key
@@ -142,19 +142,20 @@
       "iina"                # video player; something is always on in the background
       "tailscale-app"       # the phone and other machines reach the Mac only through the tailnet; never an exit node
       # school and the desk
+      "microsoft-outlook"   # Georgia Tech mail and calendar; use an Institute-approved client for GT data
       "microsoft-teams"     # Georgia Tech and the part-time job
       "zoom"                # classes and calls that are not Teams
-      "obsidian"            # the one memory: the private vault
+      "obsidian"            # opens the separate private brain repo
       "anki"                # spaced retrieval for the semester (FSRS, opt-in per deck)
-      "fantastical"         # the face of Google Calendar and the school calendar
-      "superhuman"          # the reading client for Gmail and the school mailbox; drafts are never sent by an agent
+      "fantastical"         # personal calendars only unless Georgia Tech OIT approves it for GT data
+      "superhuman"          # personal mail only unless Georgia Tech OIT approves it; agent drafts are never sent automatically
       # creative lane
-      "blender"             # 5.2 LTS
+      "blender"             # 3D creation
     ];
     # Mac App Store apps. `mas` cannot buy: sign in to the App Store and own
     # the app before the first rebuild, or the switch fails on that line.
     masApps = {
-      "Things 3" = 904280696;              # today's list, fed one way from the brief; the record stays in the vault
+      "Things 3" = 904280696;              # today's list, fed one way from the brief; durable context stays in brain
       "1Password for Safari" = 1569813296; # fill and passkeys in Safari
     };
   };

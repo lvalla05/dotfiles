@@ -3,7 +3,7 @@
 Nix-darwin plus home-manager. One command. A wiped Mac comes back the same.
 
 Orca is the ADE. The CLI in a pane is whichever harness the job needs.
-None of them is permanent. Memory lives in the Obsidian vault, not in this repo.
+None of them is permanent. Memory lives in the private `brain` repo, opened in Obsidian.
 
 ## What you get
 
@@ -13,7 +13,7 @@ None of them is permanent. Memory lives in the Obsidian vault, not in this repo.
 - Declared harness CLIs, none primary
 - Official `gh` over HTTPS
 - One `home/AGENTS.md` every harness reads
-- Obsidian as the memory surface (vault layout in `vault/`)
+- Obsidian as the memory surface, backed by a separate private `brain` repo
 
 ## Fresh Mac
 
@@ -23,7 +23,7 @@ cd ~/orca/projects/dotfiles
 ./bootstrap.sh
 ```
 
-Then `SETUP.md` (1Password, `gh auth login`, Orca, Obsidian). Then `PHONE.md`.
+Then `SETUP.md` (1Password, official `gh`, private brain, Orca, Obsidian). Then `PHONE.md`.
 
 Check without applying:
 
@@ -52,10 +52,12 @@ Keep `claude` and `claude-code@latest`. Orca is `stablyai/orca/orca`, never the 
 
 **GitHub.** HTTPS plus `gh auth login`. SSH is optional after the 1Password agent is on.
 
+**Memory.** See `BRAIN.md`. Personal context never enters this public repo.
+
 **Bypass.** Orca launches harnesses with permission-bypass.
 `/etc/grok/requirements.toml` sets `disable_bypass_permissions_mode = false`. Do not flip it.
 
-**CLAUDE.md** is a copy of `home/AGENTS.md`. The desktop app skips a symlink.
+**`~/.claude/CLAUDE.md`** is a copy of `home/AGENTS.md`. The desktop app skips a symlink.
 `~/.claude/settings.json` is a live symlink. Commit the keepers, check out the rest.
 
 ## License

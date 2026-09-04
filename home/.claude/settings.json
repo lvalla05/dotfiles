@@ -1,7 +1,7 @@
 {
   "effortLevel": "high",
   "autoUpdatesChannel": "latest",
-  "autoMemoryEnabled": true,
+  "autoMemoryEnabled": false,
   "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true,
   "inputNeededNotifEnabled": true,
@@ -18,7 +18,6 @@
       "Read(~/.aws/**)",
       "Read(**/.env)",
       "Read(**/.env.*)",
-      "Read(~/.brain/health/**)",
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
       "Bash(gh pr merge:*)",
@@ -31,8 +30,6 @@
       "mcp__*respond_to_event"
     ],
     "ask": [
-      "Bash(git push:*)",
-      "Bash(gh pr create:*)",
       "Bash(brew uninstall:*)",
       "Bash(rm -rf:*)",
       "Bash(sudo:*)",
@@ -48,8 +45,7 @@
     "credentials": {
       "files": [
         { "path": "~/.ssh", "mode": "deny" },
-        { "path": "~/.aws/credentials", "mode": "deny" },
-        { "path": "~/.brain/health", "mode": "deny" }
+        { "path": "~/.aws/credentials", "mode": "deny" }
       ],
       "envVars": [
         { "name": "GITHUB_TOKEN", "mode": "deny" },
