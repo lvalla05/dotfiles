@@ -46,6 +46,16 @@ for c in '"claude"' '"claude-code@latest"' '"chatgpt"' '"codex"' '"grok-build"' 
   grep -q "$c" "$DIR/configuration.nix" || say_fail "configuration.nix: cask $c is missing"
 done
 grep -q 'stablyai/orca/orca' "$DIR/configuration.nix" || say_fail "configuration.nix: cask stablyai/orca/orca is missing"
+
+# Grok bypass stays allowed. Do not flip this to true.
+[ -f "$DIR/home/.grok/requirements.toml" ] || say_fail "home/.grok/requirements.toml is missing"
+grep -q 'disable_bypass_permissions_mode = false' "$DIR/home/.grok/requirements.toml" \
+  || say_fail "home/.grok/requirements.toml must set disable_bypass_permissions_mode = false"
+if grep -q 'disable_bypass_permissions_mode = true' "$DIR/home/.grok/requirements.toml"; then
+  say_fail "home/.grok/requirements.toml must not pin bypass off"
+fi
+grep -q 'etc."grok/requirements.toml"' "$DIR/configuration.nix" \
+  || say_fail "configuration.nix must install home/.grok/requirements.toml to /etc/grok/requirements.toml"
 if grep -qE '"claude-code"[^@]' "$DIR/configuration.nix"; then say_fail "configuration.nix: the stable claude-code cask conflicts with claude-code@latest"; fi
 if grep -qE '^\s*"orca"' "$DIR/configuration.nix"; then say_fail "configuration.nix: bare orca token resolves to a disabled Plotly cask; use stablyai/orca/orca"; fi
 grep -q 'cleanup = "zap"' "$DIR/configuration.nix" || say_fail "configuration.nix: cleanup must stay zap"

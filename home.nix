@@ -107,6 +107,8 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".grok/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+  home.file.".grok/requirements.toml".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.grok/requirements.toml";
   # Claude is the exception, on purpose: the desktop app (Cowork, Dispatch)
   # skips a symlinked ~/.claude/CLAUDE.md and skips any @import that resolves
   # outside the working directory, so a link or an @AGENTS.md pointer loads

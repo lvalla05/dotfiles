@@ -18,6 +18,10 @@
   programs.zsh.enableGlobalCompInit = false;
   programs.zsh.enableBashCompletion = false;
 
+  # Grok Build pin. Bypass stays allowed. Orca launches grok with
+  # --permission-mode bypassPermissions. Do not flip this to true.
+  environment.etc."grok/requirements.toml".source = ./home/.grok/requirements.toml;
+
   system.stateVersion = 6;
   system.defaults = {
     NSGlobalDomain = {

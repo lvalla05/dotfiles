@@ -1,0 +1,5 @@
+# Grok Build requirements. This file is the pin.
+# /etc/grok/requirements.toml is the copy nix-darwin installs.
+# ~/.grok/requirements.toml is the same bytes, live-linked from this repo.
+[ui]
+disable_bypass_permissions_mode = false

@@ -59,7 +59,8 @@ Symlinked files under `home/` do not need a rebuild.
 app stays. `claude-code@latest` stays (`claude-code` conflicts). Orca is `stablyai/orca/orca`,
 never the bare token `orca`.
 
-**Bypass.** Orca launches harnesses with permission-bypass. Leave that default.
+**Bypass.** Orca launches harnesses with permission-bypass.
+`/etc/grok/requirements.toml` sets `disable_bypass_permissions_mode = false`. Do not flip it.
 
 **CLAUDE.md** is a copy of `home/AGENTS.md`, not a symlink. The desktop app skips a symlink.
 `~/.claude/settings.json` is a live symlink. Commit the keepers, check out the rest.
