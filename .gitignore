@@ -13,3 +13,8 @@ result-*
 # Python verification bytecode
 __pycache__/
 home/.claude/settings.json.bak
+
+# Agent tool state that lands inside a checkout
+.no-mistakes/
+.gnhf/
+.lavish-axi/

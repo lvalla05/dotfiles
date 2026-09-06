@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Install the pinned agent CLIs listed in agent-tools.lock into ~/.local/bin.
+# Idempotent: re-running installs exactly the pinned versions again.
+# Go tools build from source (telemetry off); npm tools land under ~/.local
+# because ~/.npmrc sets prefix there. Nothing here needs sudo.
+set -euo pipefail
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"
+lock="$here/agent-tools.lock"
+export GOBIN="$HOME/.local/bin"
+export GOTOOLCHAIN="${GOTOOLCHAIN:-auto}"   # fetch a newer Go toolchain if a module demands it
+mkdir -p "$HOME/.local/bin"
+command -v go >/dev/null || { echo "go is missing; run ./rebuild.sh first"; exit 1; }
+command -v npm >/dev/null || { echo "npm is missing; run ./rebuild.sh first"; exit 1; }
+
+while read -r kind name version _; do
+  case "$kind" in
+    ''|'#'*) continue ;;
+    go)  printf '==> go install %s@%s\n' "$name" "$version"; go install "$name@$version" ;;
+    npm) printf '==> npm install -g %s@%s\n' "$name" "$version"; npm install -g "$name@$version" ;;
+    *)   echo "unknown kind '$kind' in $lock"; exit 1 ;;
+  esac
+done < "$lock"
+
+# no-mistakes runs a per-user launchd daemon; (re)start it on the installed version.
+if command -v no-mistakes >/dev/null; then no-mistakes daemon restart >/dev/null 2>&1 || true; fi
+echo "==> installed:"; for b in no-mistakes treehouse lavish-axi quota-axi gh-axi gnhf; do
+  printf '    %-12s %s\n' "$b" "$(command -v "$b" 2>/dev/null || echo MISSING)"; done

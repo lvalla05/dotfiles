@@ -23,13 +23,16 @@ in
     neovim
     tmux       # terminal sessions survive a closed window; not machine sleep or shutdown
     shellcheck # the tests lint the shell scripts
-    # node for pinned one-off `npx -y <tool>@<version>` calls; no global npm layer to drift
+    # node and go run the pinned agent CLIs in home/bin/agent-tools.lock; npm
+    # installs land under ~/.local (see .npmrc), never in the nix store.
     nodejs
+    go
     # the font for editors that do not embed one (Ghostty ships its own).
     # home-manager copies fonts into ~/Library/Fonts/HomeManager; macOS ignores symlinked fonts.
     nerd-fonts.hack
   ];
   fonts.fontconfig.enable = true;
+  home.sessionPath = [ "$HOME/.local/bin" ];  # agent-tools installs here
   home.sessionVariables = {
     EDITOR = "nvim";
     SSH_AUTH_SOCK = opAgent;
@@ -80,6 +83,10 @@ in
       ".." = "cd ..";
       m = "git switch main";
       rebuild = "~/.dotfiles/rebuild.sh";
+      # Kun Chen's high-agency launchers: the harness runs unattended inside
+      # a worktree; no-mistakes gates what it produced before anything ships.
+      cc = "claude --dangerously-skip-permissions";
+      co = "codex --full-auto";
     };
   };
 
@@ -107,6 +114,10 @@ in
 
   home.file.".config/raycast/scripts".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/raycast/scripts";
+  # Pinned agent CLIs (no-mistakes, treehouse, lavish, quota, gh-axi, gnhf).
+  # Run `agent-tools` once after the first switch and after bumping the lock.
+  home.file.".local/bin/agent-tools".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/agent-tools";
 
   # One instruction file for every harness.
   # Codex and Grok Build read AGENTS.md natively; ~/.agents/AGENTS.md is the
