@@ -41,7 +41,7 @@ Open a new terminal afterwards. From then on, edit files and run `rebuild` (an a
    Claude Code (`claude`), Codex (`codex login`), Grok Build (`grok`) and pi (`/login`) with the
    existing subscriptions. Do not create API keys just to sign in. Orca setup is in `WORKFLOW.md`.
 5. Desk: follow `DESK.md` for Raycast, Rectangle, Wispr Flow permissions and the phone.
-6. Grok Bot: open it, sign in, and rebuild the daily chief from the handoff note in brain.
+6. Grok Bot: open it, sign in, and set up the daily chief from the notes in brain.
 7. School: Outlook and Teams with the Georgia Tech account; Duo on the phone.
 
 ## Prove it

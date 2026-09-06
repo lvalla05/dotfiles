@@ -71,7 +71,7 @@ in the cloud, holds the daily routines, and reaches the phone with the Mac close
 | Life, calendar, tasks, phone | Grok Bot | Cloud executive with routines and connectors |
 
 Install the pinned CLIs and the lavish and quota skills once with `agent-tools` (versions in
-`home/bin/agent-tools.lock`), then per repo: `no-mistakes init`, and `treehouse` when you want
+`home/bin/agent-tools.lock`), and use `treehouse` in a repo when you want
 parallel work. Optional, portable by copying their skill folders: Lauren Tan's `pstack`
 (verification skills with a feature map, eval playbook) and the official `ralph-loop` plugin.
 
