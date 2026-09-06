@@ -170,12 +170,5 @@
       # creative lane
       "blender"             # 3D creation
     ];
-    # Mac App Store apps. `mas` cannot buy: sign in to the App Store and own
-    # the app before the first rebuild, or the switch fails on that line.
-    masApps = {
-      "1Password for Safari" = 1569813296; # fill and passkeys in Safari
-      "Dynamic wallpaper" = 1582358382;   # preserve the already-owned wallpaper app
-      "uBlock Origin Lite" = 6745342698; # preserve the already-owned Safari blocker
-    };
   };
 }
