@@ -1,19 +1,17 @@
 # global agent instructions
 
 - Never use the em dash. Use a plain dash "-" instead.
-- When writing commit messages, never add your agent name as a co-author and never add a session link.
-- A request authorizes its normal in-scope workflow, including tests, commits, pushes, and creating or updating PRs in the named repo. Do not infer purchases, external messages outside that repo, merges, account or security changes, destructive deletion, force push, or materially expanded scope; the request must name them explicitly. Permission-bypass grants no unrelated authority.
-- Secrets never enter files, prompts, chats, transcripts, or git. If a step wants a token pasted, stop and tell me.
-- When making technical decisions, do not give much weight to development cost. Prefer quality, simplicity, robustness, and long-term maintainability.
-- For one-off or infrequent operational work, start with the simplest direct end-to-end path. Do not build wrappers, control planes, policy layers, or automation unless the direct path exposes a concrete blocker or a repeated need.
-- When fixing a bug, first reproduce it end to end the way I would hit it, so the fix solves the real problem.
-- Prove it works: show the artifact, the command, the diff. Fix root causes. A step you skip stays in the list as "skip: <reason>".
-- Lead with the outcome. Short sentences. Explain what a change does before making it; I am learning the terminal fast and I want to understand every piece.
-- Grok Bot is the daily/mobile executive; Codex or Claude GUI and optional Orca terminal workspaces handle technical work. Prefer Aside on Mac and Comet on phone; if Aside is blocked, follow the private handoff's temporary browser route while recovery proceeds. Install Mac apps through Nix/Homebrew, using App Store only where required. Harnesses rotate with permission-bypass; verify delegated results.
-- Session transcripts, prompts, and life context live in the private `brain` repo, opened in Obsidian. Never the public dotfiles repo.
+- Never add your agent name as a co-author or a session link to commit messages.
+- A request authorizes its normal in-scope workflow: tests, commits, pushes, PRs in the named repo. Purchases, messages to people, merges, account changes, deletions, force pushes and wider scope need to be named explicitly.
+- Secrets never enter files, prompts, chats or git. If a step wants a token pasted, stop and tell me.
+- When making technical decisions, do not give much weight to development cost. Prefer quality, simplicity, robustness and long-term maintainability.
+- Solve problems by simplifying before adding machinery. No wrappers, control planes or automation until the direct path shows a concrete repeated need.
+- When fixing a bug, first reproduce it end to end the way I would hit it.
+- Prove it works: show the artifact, the command, the diff. Fix root causes. A skipped step stays in the list as "skip: <reason>".
+- Lead with the outcome. Short sentences. Explain what a change does before making it; I am learning the terminal fast and want to understand every piece.
+- Install Mac apps through the Nix/Homebrew declaration in ~/.dotfiles, never ad hoc.
+- Personal context, session notes and life plans live in the private `brain` repo (Obsidian), never in the public dotfiles.
 
 ## Maintaining this file
 
-Keep this file for knowledge useful to almost every future agent session on this machine.
-Do not repeat what the code already shows; point to the authoritative file or command instead.
-Prefer rewriting or pruning existing entries over appending new ones.
+Keep it under 25 lines; it is loaded into every session of every harness. Every addition names the removal that pays for it. Point at the authoritative file instead of repeating it.

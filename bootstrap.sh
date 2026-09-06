@@ -10,10 +10,15 @@ if [ "$(id -u)" -eq 0 ]; then
   echo "Run ./bootstrap.sh as your ordinary user, not with sudo."
   exit 1
 fi
-if [ ! -d "$DIR/.git" ] || [ "$(git -C "$DIR" symbolic-ref --quiet --short HEAD)" != main ]; then
-  echo "Activate only from the primary checkout on main, not a linked worktree."
-  echo "Build and test in worktrees; merge the result into main before activating."
+# A linked worktree (.git is a file, not a directory) is disposable; never activate from one.
+if [ ! -d "$DIR/.git" ]; then
+  echo "Activate only from the primary clone, not a linked worktree."
+  echo "Build and test in worktrees; merge the result into the primary clone before activating."
   exit 1
+fi
+branch="$(git -C "$DIR" symbolic-ref --quiet --short HEAD || echo detached)"
+if [ "$branch" != main ]; then
+  echo "note: activating from branch '$branch' (not main). Live symlinks now track this branch."
 fi
 if test -L "$HOME/.dotfiles"; then
   if [ "$(readlink "$HOME/.dotfiles")" != "$DIR" ]; then

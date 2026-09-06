@@ -1,0 +1,9 @@
+# Pinned agent CLIs that neither nixpkgs nor Homebrew package. One line each:
+# kind  package-or-module  version. Bump a version, run `agent-tools`, commit.
+# Checked 2026-09-06 against GitHub releases and npm.
+go   github.com/kunchenguid/no-mistakes/cmd/no-mistakes  v1.68.0
+go   github.com/kunchenguid/treehouse                    v2.3.0
+npm  lavish-axi                                          0.1.66
+npm  quota-axi                                           0.1.38
+npm  gh-axi                                              0.1.35
+npm  gnhf                                                0.1.49

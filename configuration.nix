@@ -132,7 +132,7 @@
       "gh"     # official GitHub CLI. Do not install the Automic isotope; it prompts on every call.
       "herdr"  # terminal multiplexer; config in home/.config/herdr
       "imessage-exporter" # preserve the installed message export utility
-      "smudge/smudge/nightlight" # preserve the installed Night Shift utility
+      "smudge/smudge/nightlight" # Night Shift from the CLI; no bottle, compiles with cargo on install from a tap last updated 2025-07
     ];
     casks = [
       # identity and secrets
@@ -158,18 +158,15 @@
       "raycast"             # launcher, clipboard history, calculator, hyper key
       "rectangle"           # window tiling
       "todoist-app"         # the shared task inbox; use the existing account
-      "thaw"                # menu bar manager that supports macOS 26 and 27
+      "thaw"                # menu bar manager; its cask requires macOS 26 or newer (doctor.sh checks)
       "stats"               # memory pressure and battery in the menu bar; shows when an agent is swapping the machine
       "iina"                # video player; something is always on in the background
-      "tailscale-app"       # private reachability for a selected execution host; not an execution service or GT VPN
       # school and the desk
       "microsoft-outlook"   # Georgia Tech mail and calendar; use an Institute-approved client for GT data
       "microsoft-teams"     # Georgia Tech and the part-time job
       "zoom"                # classes and calls that are not Teams
       "obsidian"            # opens the separate private brain repo
       "anki"                # spaced retrieval for the semester (FSRS, opt-in per deck)
-      "fantastical"         # personal calendars only unless Georgia Tech OIT approves it for GT data
-      "superhuman"          # personal mail only unless Georgia Tech OIT approves it; send only within explicit authorization
       # creative lane
       "blender"             # 3D creation
     ];

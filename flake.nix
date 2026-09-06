@@ -45,8 +45,11 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             # A pre-existing regular file at a managed path is moved aside as
-            # *.backup instead of failing the switch.
+            # *.backup instead of failing the switch, and a stale *.backup from
+            # an earlier switch is overwritten instead of aborting with
+            # "would be clobbered" (the second most common rebuild failure).
             home-manager.backupFileExtension = "backup";
+            home-manager.overwriteBackup = true;
             home-manager.extraSpecialArgs = { inherit user; };
             home-manager.users.${user} = import ./home.nix;
           }
