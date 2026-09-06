@@ -1,0 +1,15 @@
+# macOS + nix build noise
+.DS_Store
+result
+result-*
+
+# Home Manager adoption backups never belong in the repo
+*.backup
+
+# Claude Code runtime files that land next to the repo
+.claude/settings.local.json
+.claude/.cc-writes/
+
+# Python verification bytecode
+__pycache__/
+home/.claude/settings.json.bak
