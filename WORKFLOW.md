@@ -45,6 +45,10 @@ subshell, `exit` returns it to the pool. One herdr tab per crewmate; the agents 
 needs you. For an overnight objective with a verifiable stop condition, `gnhf "<objective>"`
 loops one small commit per iteration and waits out subscription limits instead of billing.
 `quota-axi` shows every subscription's remaining window before you start something big.
+Inside Claude Code, `/goal <condition>` keeps a session working until an evaluator agrees the
+condition holds, `/loop` repeats a prompt on an interval, and `/schedule` creates a cloud
+Routine that runs with the Mac closed. There is no `/go`. Codex has `/goal` and Codex Cloud.
+Life routines stay in Grok Bot; code routines can use Claude Code Routines. One job, one scheduler.
 
 Never run two worktree managers on one repo: if Orca owns a project, treehouse stays out of it.
 
@@ -66,10 +70,10 @@ holds the daily routines, and reaches the phone with the Mac closed.
 | Non-Claude models in one minimal harness | pi (optional, not declared) | Kun's pick. Anthropic and Google forbid subscription OAuth in third-party harnesses; use it with API keys or the OpenAI login only |
 | Life, calendar, tasks, phone | Grok Bot | Cloud executive with routines and connectors |
 
-Install the pinned CLIs once with `agent-tools` (versions in `home/bin/agent-tools.lock`),
-then per repo: `no-mistakes init`, and `treehouse` when you want parallel work.
-Skills: `npx skills add kunchenguid/lavish-axi --skill lavish -g` and
-`npx skills add kunchenguid/quota-axi --skill quota-axi -g`.
+Install the pinned CLIs and the lavish and quota skills once with `agent-tools` (versions in
+`home/bin/agent-tools.lock`), then per repo: `no-mistakes init`, and `treehouse` when you want
+parallel work. Optional, portable by copying their skill folders: Lauren Tan's `pstack`
+(verification skills with a feature map, eval playbook) and the official `ralph-loop` plugin.
 
 ## Rules that do not change with the tools
 
