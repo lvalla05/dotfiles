@@ -1,10 +1,8 @@
 # Working with agents
 
-Kun Chen's five levels, sized for a student who ships a few projects a week rather than
-forty PRs a day. Everything here is harness-agnostic: Claude Code, Codex, Grok Build and pi
-read the same `home/AGENTS.md`, run in the same terminal, and go through the same gate.
-Evidence and dates for every tool choice are in the private brain
-(`Sources/Research/2026-09-06/kun-suite.md`).
+Five levels, from a terminal to a supervised crew. Everything is harness-agnostic: Claude
+Code, Codex, Grok Build and pi read the same `home/AGENTS.md`, run in the same terminal and
+follow the same review rules.
 
 ## 1. The ship
 
@@ -21,9 +19,8 @@ in each repo's own `AGENTS.md` with `CLAUDE.md` containing `@AGENTS.md`. Skills 
 conditional knowledge (how to test end to end, how to release) so the memory file stays small;
 install them with `npx skills add <owner>/<repo> --skill <name> -g`.
 
-Do not install viral skill packs. Kun Chen measured the popular "Karpathy guidelines" file on
-192 ProgramBench tasks: pass rate fell 2.2 points (p = 0.005) and cost rose 5 percent. Instruction
-files earn their lines from real mistakes, not from the internet.
+Do not install viral skill packs. Generic "coding guideline" files have measured negative effects
+on agent pass rates; instruction files earn their lines from real mistakes, not from the internet.
 
 ## 3. One crewmate
 
@@ -33,10 +30,12 @@ files earn their lines from real mistakes, not from the internet.
 3. Let it run. `cc` and `co` launch Claude Code and Codex unattended; the machine is
    reproducible and secrets sit behind 1Password and Automic Vault, so the blast radius is a
    rebuild, not a disaster.
-4. Gate it. `git push no-mistakes <branch>` (or `/no-mistakes` in the session) reviews, tests,
-   documents, lints, pushes, opens the PR and watches CI in a disposable worktree. Since
-   version 1.64 its review prefers removing unrequested machinery over hardening it. Read the
-   PR's risk line and evidence, not the diff, unless the risk is high.
+4. Review it. Until a project has an architecture and a working first version, the review is
+   yours: run the app, read the diff for anything the request did not ask for, keep tests
+   green. Once a codebase is established, a review gate for every later change (an
+   adversarial review in a fresh context, end-to-end tests with evidence, docs and lint, then
+   the PR) is worth adding; evaluate tools such as no-mistakes for that role at that point,
+   not before.
 
 ## 4. Several crewmates
 
@@ -54,22 +53,21 @@ Never run two worktree managers on one repo: if Orca owns a project, treehouse s
 
 ## 5. A supervisor
 
-Kun's Firstmate is not used here. Orca's orchestration (a Run, bounded Tasks, `worker-start`,
-structured completion) plus your own short dispatcher skill cover supervision without eight extra
-tools. Build the dispatcher only when level 4 feels like juggling, and keep it to what the direct
-path needs: brief a crewmate, watch its status file, ship through no-mistakes. Grok Bot already
-plays the executive role for life, not code: it runs in the cloud, holds the daily routines, and
-reaches the phone with the Mac closed.
+Orca's orchestration (a Run, bounded Tasks, `worker-start`, structured completion) plus a
+short dispatcher skill of your own cover supervision. Build the dispatcher only when level 4
+feels like juggling, and keep it to what the direct path needs: brief a crewmate, watch its
+status file, review the result. Grok Bot plays the executive role for life, not code: it runs
+in the cloud, holds the daily routines, and reaches the phone with the Mac closed.
 
 ## Which harness for what
 
 | Need | Use | Why |
 | --- | --- | --- |
-| Interactive judgment, terse prose | Claude Code, model Opus 4.8 or Opus 5 | Opus 5 is the Max default; measured nonsense-detection and verbosity data still favor Opus 4.8 for conversation |
+| Interactive judgment, terse prose | Claude Code, model Opus 4.8 or Opus 5 | Opus 5 is the Max default; published comparisons still favor Opus 4.8 for conversation |
 | Hardest decisions | Fable 5.1 as advisor or for a bounded task at high effort | On Max it is included up to half the weekly window, then metered; it is not a better all-day partner by any published measurement |
-| Bulk implementation on GPT | Codex (`co`) with Luna or Terra | Luna costs a fifth of what it did in July; Astra only for the hardest agentic runs |
+| Bulk implementation on GPT | Codex (`co`) with Luna or Terra | Cheapest capable tier; Astra only for the hardest agentic runs |
 | Grok models | Grok Build | Included with the Grok subscription |
-| GPT and Grok models in one minimal harness | pi (`agent-tools` installs it; Kun's config is linked into `~/.pi/agent`) | Kun's pick. Sign in with `/login` for ChatGPT or SuperGrok, or API keys. Anthropic and Google forbid their subscription logins in third-party harnesses |
+| GPT and Grok models in one minimal harness | pi (`agent-tools` installs it; config is linked into `~/.pi/agent`) | Sign in with `/login` for ChatGPT or SuperGrok, or API keys. Anthropic and Google forbid their subscription logins in third-party harnesses |
 | Life, calendar, tasks, phone | Grok Bot | Cloud executive with routines and connectors |
 
 Install the pinned CLIs and the lavish and quota skills once with `agent-tools` (versions in

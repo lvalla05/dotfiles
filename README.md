@@ -9,7 +9,7 @@ context lives in a separate private `brain` repo, never here.
 - macOS defaults, Touch ID sudo, an empty hidden Dock, Raycast and Rectangle.
 - Ghostty with herdr, Neovim, zsh with starship, ripgrep, fd, fzf, jq, lazygit.
 - Claude Code, Codex, Grok Build and the desktop apps (Claude, ChatGPT, Grok Bot, Cursor).
-- Pinned agent CLIs: no-mistakes, treehouse, lavish, quota-axi, gh-axi, gnhf (`agent-tools`).
+- Pinned agent CLIs: pi, treehouse, lavish, quota-axi, gh-axi, gnhf (`agent-tools`).
 - 1Password with its SSH agent, official `gh` over HTTPS, Automic Vault as an optional secret gate.
 - One 17-line `home/AGENTS.md` that every harness reads.
 

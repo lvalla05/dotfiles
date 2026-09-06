@@ -22,8 +22,6 @@ while read -r kind name version _; do
   esac
 done < "$lock"
 
-# no-mistakes runs a per-user launchd daemon; (re)start it on the installed version.
-if command -v no-mistakes >/dev/null; then no-mistakes daemon restart >/dev/null 2>&1 || true; fi
 
 # Skills (Agent Skills standard) for every detected harness, via Vercel's skills CLI.
 # -y answers the prompts; -g installs for all projects. Failure here is not fatal.
@@ -31,5 +29,5 @@ for spec in "kunchenguid/lavish-axi --skill lavish" "kunchenguid/quota-axi --ski
   # shellcheck disable=SC2086 # the spec is intentionally word-split into arguments
   npx -y skills@1.5.23 add $spec -g -y || echo "warn: skill install failed for $spec"
 done
-echo "==> installed:"; for b in pi no-mistakes treehouse lavish-axi quota-axi gh-axi gnhf; do
+echo "==> installed:"; for b in pi treehouse lavish-axi quota-axi gh-axi gnhf; do
   printf '    %-12s %s\n' "$b" "$(command -v "$b" 2>/dev/null || echo MISSING)"; done

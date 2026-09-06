@@ -83,8 +83,8 @@ in
       ".." = "cd ..";
       m = "git switch main";
       rebuild = "~/.dotfiles/rebuild.sh";
-      # Kun Chen's high-agency launchers: the harness runs unattended inside
-      # a worktree; no-mistakes gates what it produced before anything ships.
+      # Unattended launchers: the harness runs without prompts inside a
+      # worktree; review what it produced before anything ships.
       cc = "claude --dangerously-skip-permissions";
       co = "codex --full-auto";
     };
@@ -114,7 +114,7 @@ in
 
   home.file.".config/raycast/scripts".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/raycast/scripts";
-  # pi coding agent: Kun Chen's minimal config (MIT-0), live-linked like his.
+  # pi coding agent: a minimal config (from kunchenguid/dotfiles, MIT-0), live-linked.
   # settings.json pins two packages; models.json caps GPT-5.6 at 272K, the
   # Codex tier boundary. Sign in with /login (ChatGPT) or API keys; Anthropic
   # and Google forbid their subscription logins in third-party harnesses.
@@ -126,7 +126,7 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/extensions";
   home.file.".pi/agent/themes".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/themes";
-  # Pinned agent CLIs (pi, no-mistakes, treehouse, lavish, quota, gh-axi, gnhf).
+  # Pinned agent CLIs (pi, treehouse, lavish, quota, gh-axi, gnhf).
   # Run `agent-tools` once after the first switch and after bumping the lock.
   home.file.".local/bin/agent-tools".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/agent-tools";
