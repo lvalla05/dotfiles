@@ -52,12 +52,14 @@ Life routines stay in Grok Bot; code routines can use Claude Code Routines. One 
 
 Never run two worktree managers on one repo: if Orca owns a project, treehouse stays out of it.
 
-## 5. A first mate
+## 5. A supervisor
 
-Firstmate (Kun's supervisor agent) needs eight tools and a dedicated session; it pays off when
-three or more parallel tasks are routine. Not installed. Revisit when level 4 feels like
-juggling. Grok Bot already plays the executive role for life, not code: it runs in the cloud,
-holds the daily routines, and reaches the phone with the Mac closed.
+Kun's Firstmate is not used here. Orca's orchestration (a Run, bounded Tasks, `worker-start`,
+structured completion) plus your own short dispatcher skill cover supervision without eight extra
+tools. Build the dispatcher only when level 4 feels like juggling, and keep it to what the direct
+path needs: brief a crewmate, watch its status file, ship through no-mistakes. Grok Bot already
+plays the executive role for life, not code: it runs in the cloud, holds the daily routines, and
+reaches the phone with the Mac closed.
 
 ## Which harness for what
 
