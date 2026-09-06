@@ -17,6 +17,7 @@ while read -r kind name version _; do
     ''|'#'*) continue ;;
     go)  printf '==> go install %s@%s\n' "$name" "$version"; go install "$name@$version" ;;
     npm) printf '==> npm install -g %s@%s\n' "$name" "$version"; npm install -g "$name@$version" ;;
+    npmx) printf '==> npm install -g --ignore-scripts %s@%s\n' "$name" "$version"; npm install -g --ignore-scripts "$name@$version" ;;
     *)   echo "unknown kind '$kind' in $lock"; exit 1 ;;
   esac
 done < "$lock"
@@ -30,5 +31,5 @@ for spec in "kunchenguid/lavish-axi --skill lavish" "kunchenguid/quota-axi --ski
   # shellcheck disable=SC2086 # the spec is intentionally word-split into arguments
   npx -y skills@1.5.23 add $spec -g -y || echo "warn: skill install failed for $spec"
 done
-echo "==> installed:"; for b in no-mistakes treehouse lavish-axi quota-axi gh-axi gnhf; do
+echo "==> installed:"; for b in pi no-mistakes treehouse lavish-axi quota-axi gh-axi gnhf; do
   printf '    %-12s %s\n' "$b" "$(command -v "$b" 2>/dev/null || echo MISSING)"; done

@@ -37,9 +37,9 @@ Open a new terminal afterwards. From then on, edit files and run `rebuild` (an a
    The agent socket path is already declared in `home.nix`.
 3. Brain: `git clone https://github.com/lvalla05/brain.git ~/orca/projects/brain`, open it as
    the Obsidian vault, connect Obsidian Sync on Mac and phone.
-4. Harnesses: sign into Claude Code (`claude`), Codex (`codex`), Grok Build (`grok`) and pi
-   with the existing subscriptions. Run `agent-tools` once to install the pinned agent CLIs
-   (see `WORKFLOW.md`). Do not create API keys just to sign in.
+4. Harnesses: run `agent-tools` once to install pi and the pinned agent CLIs, then sign into
+   Claude Code (`claude`), Codex (`codex login`), Grok Build (`grok`) and pi (`/login`) with the
+   existing subscriptions. Do not create API keys just to sign in. Orca setup is in `WORKFLOW.md`.
 5. Desk: follow `DESK.md` for Raycast, Rectangle, Wispr Flow permissions and the phone.
 6. Grok Bot: open it, sign in, and rebuild the daily chief from the handoff note in brain.
 7. School: Outlook and Teams with the Georgia Tech account; Duo on the phone.
