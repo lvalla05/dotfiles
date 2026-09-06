@@ -52,12 +52,15 @@ done
 # 6. Homebrew state
 if [ -x /opt/homebrew/bin/brew ]; then
   ok "brew $(/opt/homebrew/bin/brew --version 2>/dev/null | head -1)"
-  if [ -f "$HOME/.local/state/homebrew/bundle.lock" ] || [ -f /opt/homebrew/.bundle.lock ]; then :; fi
 else warn "no /opt/homebrew/bin/brew" "nix-homebrew installs it on the first switch"; fi
 if command -v mas >/dev/null 2>&1; then
-  if mas account >/dev/null 2>&1; then ok "App Store signed in"; else
-    warn "mas cannot see an App Store sign-in" "sign in to the App Store or the masApps line will fail"; fi
+  if mas list 2>/dev/null | grep -q .; then ok "mas sees installed App Store apps"; else
+    warn "mas lists no App Store apps" "sign in to the App Store and own the three declared masApps, or brew bundle fails on that line"; fi
 fi
+# thaw's cask declares depends_on macos: :tahoe (26).
+macos_major="$(sw_vers -productVersion 2>/dev/null | cut -d. -f1)"
+if [ -n "$macos_major" ] && [ "$macos_major" -lt 26 ]; then
+  bad "macOS $macos_major is older than 26; the thaw cask refuses to install" "upgrade macOS or ask to remove thaw from configuration.nix"; fi
 
 # 7. Evaluate the flake without building (fast, catches typos and unknown options)
 if command -v nix >/dev/null 2>&1; then
