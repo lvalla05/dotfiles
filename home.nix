@@ -141,7 +141,6 @@ in
   # npm never needs sudo and never writes into the nix store.
   home.file.".npmrc".text = "prefix=${config.home.homeDirectory}/.local\n";
   # Ordinary SSH uses keys stored in 1Password. GitHub git stays on HTTPS.
-  # Tailscale SSH authenticates through tailnet identity, not this agent.
   home.file.".ssh/config".text = ''
     Host *
       IdentityAgent "${opAgent}"

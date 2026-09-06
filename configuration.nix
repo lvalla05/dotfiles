@@ -161,15 +161,12 @@
       "thaw"                # menu bar manager that supports macOS 26 and 27
       "stats"               # memory pressure and battery in the menu bar; shows when an agent is swapping the machine
       "iina"                # video player; something is always on in the background
-      "tailscale-app"       # private reachability for a selected execution host; not an execution service or GT VPN
       # school and the desk
       "microsoft-outlook"   # Georgia Tech mail and calendar; use an Institute-approved client for GT data
       "microsoft-teams"     # Georgia Tech and the part-time job
       "zoom"                # classes and calls that are not Teams
       "obsidian"            # opens the separate private brain repo
       "anki"                # spaced retrieval for the semester (FSRS, opt-in per deck)
-      "fantastical"         # personal calendars only unless Georgia Tech OIT approves it for GT data
-      "superhuman"          # personal mail only unless Georgia Tech OIT approves it; send only within explicit authorization
       # creative lane
       "blender"             # 3D creation
     ];

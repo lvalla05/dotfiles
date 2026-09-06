@@ -19,7 +19,8 @@ grep -qx '@AGENTS.md' "$DIR/CLAUDE.md" || say_fail "CLAUDE.md must import AGENTS
 # the human-facing docs bootstrap.sh and the README point at
 [ -f "$DIR/README.md" ] || say_fail "README.md is missing"
 [ -f "$DIR/SETUP.md" ] || say_fail "SETUP.md is missing"
-[ -f "$DIR/PHONE.md" ] || say_fail "PHONE.md is missing"
+[ -f "$DIR/DESK.md" ] || say_fail "DESK.md is missing"
+[ -f "$DIR/WORKFLOW.md" ] || say_fail "WORKFLOW.md is missing"
 [ -f "$DIR/BRAIN.md" ] || say_fail "BRAIN.md is missing"
 if [ -d "$DIR/vault" ] && find "$DIR/vault" -type f -print -quit | grep -q .; then
   say_fail "the private brain is a separate repo; no public vault scaffold belongs here"
@@ -102,8 +103,8 @@ nix shell --inputs-from "$DIR" nixpkgs#python3 --command python3 "$DIR/tests/con
   || say_fail "Codex config preservation tests failed"
 
 # scripts parse
-for s in "$DIR"/bootstrap.sh "$DIR"/rebuild.sh "$DIR"/tests/*.sh; do bash -n "$s" || say_fail "$s does not parse"; done
-shellcheck "$DIR/bootstrap.sh" "$DIR/rebuild.sh" "$DIR"/tests/*.sh "$DIR"/home/.config/raycast/scripts/*.sh || say_fail "ShellCheck failed"
+for s in "$DIR"/bootstrap.sh "$DIR"/rebuild.sh "$DIR"/doctor.sh "$DIR"/tests/*.sh; do bash -n "$s" || say_fail "$s does not parse"; done
+shellcheck "$DIR/bootstrap.sh" "$DIR/rebuild.sh" "$DIR/doctor.sh" "$DIR"/tests/*.sh "$DIR"/home/.config/raycast/scripts/*.sh || say_fail "ShellCheck failed"
 
 # no em dash in anything an agent reads
 if git -C "$DIR" ls-files -z 2>/dev/null | (cd "$DIR" && xargs -0 grep -lF $'\xe2\x80\x94' 2>/dev/null) | grep -q .; then say_fail "em dash found in a tracked file"; fi

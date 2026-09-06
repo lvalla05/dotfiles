@@ -63,7 +63,7 @@ reject() {
 
 # A real linked worktree must fail even when its link would otherwise be valid.
 command ln -s "$TEST_DIR/worker" "$TEST_LINK"
-reject "$TEST_DIR/worker" 'primary checkout on main'
+reject "$TEST_DIR/worker" 'primary clone'
 [ "$(command readlink "$TEST_LINK")" = "$TEST_DIR/worker" ]
 command rm "$TEST_LINK"
 git -C "$TEST_DIR/worker" switch -q --detach
@@ -86,8 +86,13 @@ command rm "$TEST_LINK"
 TEST_UID=0
 reject "$TEST_DIR/primary" 'ordinary user'
 TEST_UID=501
+# A feature branch in the primary clone is allowed (with a note), only worktrees are refused.
 git -C "$TEST_DIR/primary" switch -qc feature
-reject "$TEST_DIR/primary" 'primary checkout on main'
+: > "$TEST_CALLS"
+output=$(PATH="$TEST_DIR/bin:$PATH" BASH_ENV=/dev/null /bin/bash "$TEST_DIR/primary/rebuild.sh" 2>&1)
+[[ "$output" == *"branch 'feature'"* ]] || { printf 'FAIL feature branch should activate with a note\n%s\n' "$output"; exit 1; }
+grep -q '^sudo ' "$TEST_CALLS" || { echo 'FAIL feature branch did not reach darwin-rebuild'; exit 1; }
+command rm -f "$TEST_LINK"
 git -C "$TEST_DIR/primary" switch -q main
 
 # A primary checkout can create the initial link, then reuse it without rewriting it.
@@ -99,4 +104,4 @@ for expected_links in 1 0; do
   grep -Fxq "sudo /run/current-system/sw/bin/darwin-rebuild switch --flake $TEST_DIR/primary#mac" "$TEST_CALLS"
 done
 
-echo "ok: linked worktrees, root, non-main branches, and conflicting links rejected; primary link created once"
+echo "ok: linked worktrees, root, and conflicting links rejected; feature branch allowed; primary link created once"
