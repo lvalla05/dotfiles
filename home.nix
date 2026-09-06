@@ -114,7 +114,19 @@ in
 
   home.file.".config/raycast/scripts".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/raycast/scripts";
-  # Pinned agent CLIs (no-mistakes, treehouse, lavish, quota, gh-axi, gnhf).
+  # pi coding agent: Kun Chen's minimal config (MIT-0), live-linked like his.
+  # settings.json pins two packages; models.json caps GPT-5.6 at 272K, the
+  # Codex tier boundary. Sign in with /login (ChatGPT) or API keys; Anthropic
+  # and Google forbid their subscription logins in third-party harnesses.
+  home.file.".pi/agent/settings.json".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/settings.json";
+  home.file.".pi/agent/models.json".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/models.json";
+  home.file.".pi/agent/extensions".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/extensions";
+  home.file.".pi/agent/themes".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/themes";
+  # Pinned agent CLIs (pi, no-mistakes, treehouse, lavish, quota, gh-axi, gnhf).
   # Run `agent-tools` once after the first switch and after bumping the lock.
   home.file.".local/bin/agent-tools".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/agent-tools";

@@ -67,13 +67,31 @@ holds the daily routines, and reaches the phone with the Mac closed.
 | Hardest decisions | Fable 5.1 as advisor or for a bounded task at high effort | On Max it is included up to half the weekly window, then metered; it is not a better all-day partner by any published measurement |
 | Bulk implementation on GPT | Codex (`co`) with Luna or Terra | Luna costs a fifth of what it did in July; Astra only for the hardest agentic runs |
 | Grok models | Grok Build | Included with the Grok subscription |
-| Non-Claude models in one minimal harness | pi (optional, not declared) | Kun's pick. Anthropic and Google forbid subscription OAuth in third-party harnesses; use it with API keys or the OpenAI login only |
+| GPT and Grok models in one minimal harness | pi (`agent-tools` installs it; Kun's config is linked into `~/.pi/agent`) | Kun's pick. Sign in with `/login` for ChatGPT or SuperGrok, or API keys. Anthropic and Google forbid their subscription logins in third-party harnesses |
 | Life, calendar, tasks, phone | Grok Bot | Cloud executive with routines and connectors |
 
 Install the pinned CLIs and the lavish and quota skills once with `agent-tools` (versions in
 `home/bin/agent-tools.lock`), then per repo: `no-mistakes init`, and `treehouse` when you want
 parallel work. Optional, portable by copying their skill folders: Lauren Tan's `pstack`
 (verification skills with a feature map, eval playbook) and the official `ralph-loop` plugin.
+
+## Orca, when you want a workspace instead of tabs
+
+Orca (declared cask `stablyai/orca/orca`, telemetry already off through `ORCA_TELEMETRY_DISABLED`)
+runs Claude Code, Codex, Grok Build and pi side by side in its own worktrees with a diff view and a
+phone companion. It is optional; herdr covers the same ground in the terminal. If you use it:
+
+1. Launch Orca, add `~/orca/projects/dotfiles` and `~/orca/projects/brain` as projects, and fully
+   restart it after `gh auth login` so its GitHub view picks up the credential.
+2. Register its CLI in Settings, then in a terminal: `orca status --json` must report reachable and
+   ready; `orca skills get orca-cli` and `orca skills get orchestration` load the current guides.
+3. Sign into each harness once inside an Orca terminal: `claude`, `codex login`, `grok`, and `pi`
+   with `/login`. Orca detects the CLIs on PATH; `agent-tools` puts pi there.
+4. Leave Agent Permissions on the vendor default (bypass); `home/.grok/requirements.toml` keeps
+   Grok Build's bypass enabled.
+5. Clear the generic `pnpm install` worktree setup hook for dotfiles and brain (Settings, the
+   repository, Worktree Hooks, Setup Script). Never put `rebuild.sh` in a hook.
+6. Orca owns worktrees for the projects it manages; do not run treehouse in those repos.
 
 ## Rules that do not change with the tools
 
