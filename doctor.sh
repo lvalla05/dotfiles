@@ -19,11 +19,11 @@ if [ -n "$(git -C "$DIR" ls-files --others --exclude-standard)" ]; then
 
 # 2. ~/.dotfiles pointer
 if [ -L "$HOME/.dotfiles" ]; then
-  if [ "$(readlink "$HOME/.dotfiles")" = "$DIR" ]; then ok "~/.dotfiles -> $DIR"; else
-    bad "~/.dotfiles -> $(readlink "$HOME/.dotfiles"), not $DIR" "rm '$HOME/.dotfiles' && ln -s '$DIR' '$HOME/.dotfiles'"; fi
+  if [ "$(readlink "$HOME/.dotfiles")" = "$DIR" ]; then ok "link $HOME/.dotfiles -> $DIR"; else
+    bad "link $HOME/.dotfiles -> $(readlink "$HOME/.dotfiles"), not $DIR" "rm '$HOME/.dotfiles' && ln -s '$DIR' '$HOME/.dotfiles'"; fi
 elif [ -e "$HOME/.dotfiles" ]; then
-  bad "~/.dotfiles exists and is not a symlink" "move it aside: mv '$HOME/.dotfiles' '$HOME/.dotfiles.old'"
-else ok "~/.dotfiles will be created by rebuild.sh"; fi
+  bad "$HOME/.dotfiles exists and is not a symlink" "move it aside: mv '$HOME/.dotfiles' '$HOME/.dotfiles.old'"
+else ok "$HOME/.dotfiles will be created by rebuild.sh"; fi
 
 # 3. Toolchain
 if [ "$(uname -m)" = arm64 ]; then ok "Apple silicon"; else bad "not arm64" "this flake targets aarch64-darwin"; fi
