@@ -1,374 +1,115 @@
-diff --git a/bin/backends/orca.sh b/bin/backends/orca.sh
-index d1e177c..861ea11 100644
---- a/bin/backends/orca.sh
-+++ b/bin/backends/orca.sh
-@@ -213,20 +213,108 @@ fm_backend_orca_send_literal() {  # <terminal-id> <text>
-   fm_backend_orca_run_json orca terminal send --terminal "$terminal" --text "$text" --json
+diff --git a/bin/fm-orca-process-lib.sh b/bin/fm-orca-process-lib.sh
+index 6ef0df2..453be4a 100755
+--- a/bin/fm-orca-process-lib.sh
++++ b/bin/fm-orca-process-lib.sh
+@@ -312,6 +312,29 @@ fm_orca_process_supervisor_owner_pid() {  # <current-tty>
+   printf '%s' "$candidate"
  }
  
-+fm_backend_orca_worktree_id_path() {  # <full-worktree-id>
-+  local value=${1:-} repo_id embedded_path
-+  case "$value" in
-+    *::/*) ;;
-+    *) return 1 ;;
-+  esac
-+  repo_id=${value%%::*}
-+  embedded_path=${value#*::}
-+  case "$repo_id" in
-+    ''|*[!A-Za-z0-9._@%+-]*) return 1 ;;
-+  esac
-+  [ -n "$embedded_path" ] || return 1
-+  ! printf '%s' "$value" | LC_ALL=C grep -q '[[:cntrl:]]' || return 1
-+  printf '%s' "$embedded_path"
-+}
-+
-+fm_backend_orca_filesystem_path_state() {  # <absolute-path> -> absent|present|unknown
-+  node -e '
-+const fs = require("fs");
-+try {
-+  fs.lstatSync(process.argv[1]);
-+  process.stdout.write("present");
-+} catch (err) {
-+  process.stdout.write(err && err.code === "ENOENT" ? "absent" : "unknown");
-+}
-+' "$1"
-+}
-+
-+fm_backend_orca_json_error_code_is() {  # <json> <exact-code>
-+  printf '%s' "$1" | node -e '
-+const fs = require("fs");
-+let data;
-+try { data = JSON.parse(fs.readFileSync(0, "utf8")); } catch { process.exit(1); }
-+process.exit(data && data.ok === false && data.error && data.error.code === process.argv[1] ? 0 : 1);
-+' "$2"
-+}
-+
- fm_backend_orca_remove_worktree() {  # <worktree-id> [--force]
--  local worktree_id=${1:-} force=${2:-}
-+  local worktree_id=${1:-} force=${2:-} worktree_path path_state out show_out
-+  local remove_error='' show_error=''
-   [ -n "$worktree_id" ] || { echo "error: missing Orca worktree id; cannot remove worktree" >&2; return 1; }
-   case "$force" in
-     '') ;;
-     --force) ;;
-     *) echo "error: unsupported Orca worktree removal option '$force'" >&2; return 1 ;;
-   esac
-+  worktree_path=$(fm_backend_orca_worktree_id_path "$worktree_id") || {
-+    echo "error: malformed Orca worktree id; expected the exact full repo-id::absolute-path selector" >&2
-+    return 1
-+  }
-   fm_backend_orca_tool_check || return 1
-   if [ "$force" = --force ]; then
--    fm_backend_orca_run_json orca worktree rm --worktree "id:$worktree_id" --force --json
-+    if out=$(orca worktree rm --worktree "id:$worktree_id" --force --json) \
-+       && remove_error=$(printf '%s' "$out" | fm_backend_orca_json_ok 2>&1); then
++# Pi's bash tool has pipe-based stdin. Follow only the current process ancestry
++# to its Pi owner; never discover a candidate by scanning other terminals.
++fm_orca_process_supervisor_pi_ancestor() {
++  local pid=${FM_ORCA_SUPERVISOR_PARENT_PID_OVERRIDE:-$PPID} attempt=0 comm args parent class
++  while [ "$attempt" -lt 16 ]; do
++    attempt=$((attempt + 1))
++    case "$pid" in ''|*[!0-9]*|0|1) return 1 ;; esac
++    comm=$(fm_orca_process_ps_field "$pid" comm) || return 1
++    args=$(fm_orca_process_ps_field "$pid" args) || return 1
++    if fm_orca_process_pi_process_matches "$comm" "$args"; then
++      printf '%s' "$pid"
 +      return 0
 +    fi
++    fm_orca_process_load_classifier || return 1
++    class=$(fm_backend_tmux_classify_process_name "$comm" "${args%%[[:space:]]*}")
++    [ "$class" = shell ] || return 1
++    parent=$(fm_orca_process_ps_field "$pid" ppid) || return 1
++    [ "$parent" != "$pid" ] || return 1
++    pid=$parent
++  done
++  return 1
++}
++
+ # Enroll the exact local process that owns an Orca primary before it execs Pi,
+ # or the exact Pi ancestor when /afk is invoked from Pi's bash tool. The caller
+ # already captured the current-pane tuple and passes every field again so a
+@@ -320,7 +343,7 @@ fm_orca_process_supervisor_bind() {  # <binding> <terminal> <worktree-id> <workt
+   [ "$#" -eq 9 ] || return 2
+   local binding=$1 terminal=$2 worktree_id=$3 worktree_path=$4 pty_id=$5
+   local incarnation_id=$6 tab_id=$7 leaf_id=$8 execution_host_id=$9
+-  local facts observed_tty owner_pid birth owner_tty cwd tmp old_umask
++  local facts observed_tty owner_pid='' birth owner_tty cwd tmp old_umask require_pi=0
+   [ "$execution_host_id" = local ] && [ -d "$(dirname "$binding")" ] && [ ! -d "$binding" ] || return 1
+   facts=$(fm_orca_process_terminal_facts "$terminal") || return 1
+   fm_orca_process_facts_match_tuple "$facts" "$terminal" "$worktree_id" "$worktree_path" \
+@@ -328,10 +351,16 @@ fm_orca_process_supervisor_bind() {  # <binding> <terminal> <worktree-id> <workt
+   if [ -n "${FM_ORCA_SUPERVISOR_SELF_TTY_OVERRIDE:-}" ]; then
+     observed_tty=$FM_ORCA_SUPERVISOR_SELF_TTY_OVERRIDE
    else
--    fm_backend_orca_run_json orca worktree rm --worktree "id:$worktree_id" --json
-+    if out=$(orca worktree rm --worktree "id:$worktree_id" --json) \
-+       && remove_error=$(printf '%s' "$out" | fm_backend_orca_json_ok 2>&1); then
-+      return 0
+-    observed_tty=$(${FM_ORCA_TTY_BIN:-tty} 2>/dev/null) || return 1
++    if ! observed_tty=$(${FM_ORCA_TTY_BIN:-tty} 2>/dev/null); then
++      owner_pid=$(fm_orca_process_supervisor_pi_ancestor) || return 1
++      observed_tty=$(fm_orca_process_ps_field "$owner_pid" tty) || return 1
++      require_pi=1
 +    fi
+   fi
+   observed_tty=$(fm_orca_process_tty_normalize "$observed_tty") || return 1
+-  owner_pid=$(fm_orca_process_supervisor_owner_pid "$observed_tty") || return 1
++  if [ -z "$owner_pid" ]; then
++    owner_pid=$(fm_orca_process_supervisor_owner_pid "$observed_tty") || return 1
 +  fi
-+
-+  path_state=$(fm_backend_orca_filesystem_path_state "$worktree_path") || path_state=unknown
-+  case "$path_state" in
-+    absent) ;;
-+    present)
-+      echo "error: Orca worktree removal was not confirmed and its recorded path still exists: $worktree_path" >&2
-+      if [ -n "$remove_error" ]; then
-+        printf '%s\n' "$remove_error" >&2
-+      else
-+        printf '%s' "$out" | fm_backend_orca_json_ok || true
-+      fi
-+      return 1
-+      ;;
-+    *)
-+      echo "error: Orca worktree removal was not confirmed and filesystem absence could not be proved: $worktree_path" >&2
-+      if [ -n "$remove_error" ]; then
-+        printf '%s\n' "$remove_error" >&2
-+      else
-+        printf '%s' "$out" | fm_backend_orca_json_ok || true
-+      fi
-+      return 1
-+      ;;
-+  esac
-+
-+  show_out=$(orca worktree show --worktree "id:$worktree_id" --json 2>/dev/null || true)
-+  if ! fm_backend_orca_json_error_code_is "$show_out" selector_not_found; then
-+    if [ -n "$show_out" ]; then
-+      show_error=$(printf '%s' "$show_out" | fm_backend_orca_json_ok 2>&1) || true
-+    fi
-+    if [ -n "$show_error" ]; then
-+      printf '%s\n' "$show_error" >&2
-+    elif [ -n "$remove_error" ]; then
-+      printf '%s\n' "$remove_error" >&2
-+    else
-+      printf '%s' "$out" | fm_backend_orca_json_ok || true
-+    fi
+   birth=$(fm_orca_process_ps_field "$owner_pid" lstart) || return 1
+   owner_tty=$(fm_orca_process_ps_field "$owner_pid" tty) || return 1
+   owner_tty=$(fm_orca_process_tty_normalize "$owner_tty") || return 1
+@@ -360,6 +389,10 @@ fm_orca_process_supervisor_bind() {  # <binding> <terminal> <worktree-id> <workt
+     return 1
+   fi
+   chmod 600 "$tmp" || { rm -f "$tmp"; return 1; }
++  if [ "$require_pi" -eq 1 ] && ! fm_orca_process_foreground_pi_from_binding "$tmp" "$terminal" >/dev/null; then
++    rm -f "$tmp"
 +    return 1
-   fi
-+  fm_backend_orca_runtime_check || return 1
-+  return 0
++  fi
+   mv -f "$tmp" "$binding"
  }
  
- fm_backend_orca_worktree_path() {
-diff --git a/bin/fm-ff-lib.sh b/bin/fm-ff-lib.sh
-index b099fa9..6d8be65 100644
---- a/bin/fm-ff-lib.sh
-+++ b/bin/fm-ff-lib.sh
-@@ -35,6 +35,8 @@
- SUB_HOME_MARKER="${SUB_HOME_MARKER:-.fm-secondmate-home}"
- # shellcheck source=bin/fm-secondmate-registry-lib.sh
- . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-secondmate-registry-lib.sh"
-+# shellcheck source=bin/fm-tangle-lib.sh
-+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-tangle-lib.sh"
- 
- # --- helpers ---------------------------------------------------------------
- 
-@@ -337,7 +339,9 @@ ff_target() {
-     echo "$label: skipped: detached HEAD, expected $default"
-     return 0
-   fi
--  if [ -n "$cur" ] && [ "$cur" != "$default" ]; then
-+  if [ -n "$cur" ] && [ "$cur" != "$default" ] \
-+    && ! { [ "$allow_detached" = yes ] && [ "$ignore_seed_marker" = yes ] \
-+      && fm_orca_secondmate_branch_valid "$dir" "$cur"; }; then
-     echo "$label: skipped: on $cur, expected $default"
-     return 0
-   fi
-diff --git a/bin/fm-tangle-lib.sh b/bin/fm-tangle-lib.sh
-index a8554fb..9823d4b 100644
---- a/bin/fm-tangle-lib.sh
-+++ b/bin/fm-tangle-lib.sh
-@@ -35,6 +35,44 @@ fm_default_branch() {
-   return 1
+diff --git a/tests/fm-orca-process.test.sh b/tests/fm-orca-process.test.sh
+index cabc917..e0ae69c 100755
+--- a/tests/fm-orca-process.test.sh
++++ b/tests/fm-orca-process.test.sh
+@@ -471,6 +471,31 @@ test_supervisor_binding_proves_only_exact_foreground_pi() {
+   pass "fm-orca-process composer: private supervisor binding proves only the exact live foreground Pi"
  }
  
-+# Orca gives persistent homes a named branch. Accept only the exact seeded
-+# identity in a linked checkout; an ordinary feature branch still alarms.
-+fm_orca_secondmate_branch_valid() {  # <home> <branch>
-+  local root=$1 branch=$2 real top
-+  [ -f "$root/.git" ] && [ ! -L "$root/.git" ] || return 1
-+  real=$(cd "$root" && pwd -P) || return 1
-+  top=$(git -C "$real" rev-parse --show-toplevel 2>/dev/null) || return 1
-+  [ "$top" = "$real" ] || return 1
-+  node - "$real" "$branch" <<'JS'
-+const fs = require('fs');
-+const path = require('path');
-+const [home, branch] = process.argv.slice(2);
-+try {
-+  const read = name => {
-+    const p = path.join(home, name);
-+    if (!fs.lstatSync(p).isFile()) throw new Error('not a regular file');
-+    const text = fs.readFileSync(p, 'utf8');
-+    if (/[\x00-\x08\x0b-\x1f\x7f]/.test(text)) throw new Error('control byte');
-+    return text.trimEnd();
-+  };
-+  const id = read('.fm-secondmate-home');
-+  if (!/^[A-Za-z0-9._-]+$/.test(id) || branch !== `fm-${id}`) process.exit(1);
-+  const rows = read('.fm-secondmate-orca').split('\n').map(line => {
-+    const at = line.indexOf('=');
-+    if (at < 1) throw new Error('invalid row');
-+    return [line.slice(0, at), line.slice(at + 1)];
-+  });
-+  const record = Object.fromEntries(rows);
-+  if (rows.length !== 4 || Object.keys(record).length !== 4
-+      || record.schema !== 'fm-secondmate-orca.v1' || record.id !== id
-+      || record.path !== home) process.exit(1);
-+  const prefix = record.worktree_id?.slice(0, 38);
-+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}::$/.test(prefix || '')
-+      || record.worktree_id !== prefix + home) process.exit(1);
-+} catch { process.exit(1); }
-+JS
++test_supervisor_binding_from_piped_pi_tool() {
++  local binding
++  reset_identity
++  binding="$STATE/.piped-primary"
++  printf 'pi\n' > "$FAKE/comm.4242"
++  printf '/opt/homebrew/bin/pi\n' > "$FAKE/args.4242"
++  printf '4242 4242 4242 /opt/homebrew/bin/pi\n' > "$FAKE/rows"
++  FM_ORCA_SUPERVISOR_PARENT_PID_OVERRIDE=4242 FM_ORCA_TTY_BIN=false \
++    fm_orca_process_supervisor_bind "$binding" term-1 "repo-1::$WT" "$WT" \
++      pty-1 inc-1 tab-1 leaf-1 local || fail "piped Pi tool should enroll its foreground parent"
++  [ "$(fm_orca_process_record_get "$binding" process_pid)" = 4242 ] || fail "wrong Pi owner"
++  rm "$binding"
++  printf '4242 4242 9000 /opt/homebrew/bin/pi\n' > "$FAKE/rows"
++  FM_ORCA_SUPERVISOR_PARENT_PID_OVERRIDE=4242 FM_ORCA_TTY_BIN=false \
++    fm_orca_process_supervisor_bind "$binding" term-1 "repo-1::$WT" "$WT" \
++      pty-1 inc-1 tab-1 leaf-1 local && fail "background Pi must not enroll"
++  [ ! -e "$binding" ] || fail "refused Pi enrollment published a binding"
++  printf '/bin/sleep\n' > "$FAKE/comm.4242"
++  printf '/bin/sleep 30\n' > "$FAKE/args.4242"
++  FM_ORCA_SUPERVISOR_PARENT_PID_OVERRIDE=4242 FM_ORCA_TTY_BIN=false \
++    fm_orca_process_supervisor_bind "$binding" term-1 "repo-1::$WT" "$WT" \
++      pty-1 inc-1 tab-1 leaf-1 local && fail "unrelated piped process must not enroll"
++  pass "fm-orca-process supervisor: piped Pi tools prove exact foreground ancestry"
 +}
 +
- # If the git checkout at <root> is tangled - on a NAMED branch that is not its
- # default branch - echo the offending branch name and return 0. For every healthy
- # state (not a git work tree, detached HEAD, or already on the default branch)
-@@ -48,6 +86,7 @@ fm_primary_tangle_branch() {
-   [ -n "$cur" ] || return 1
-   default=$(fm_default_branch "$root") || return 1
-   [ "$cur" = "$default" ] && return 1
-+  fm_orca_secondmate_branch_valid "$root" "$cur" && return 1
-   printf '%s\n' "$cur"
-   return 0
- }
-diff --git a/tests/fm-backend-orca.test.sh b/tests/fm-backend-orca.test.sh
-index 54bf082..e134cb9 100755
---- a/tests/fm-backend-orca.test.sh
-+++ b/tests/fm-backend-orca.test.sh
-@@ -581,18 +581,95 @@ test_remove_worktree_refuses_empty_id() {
-   pass "fm_backend_orca_remove_worktree: refuses empty worktree ids"
- }
- 
--test_remove_worktree_rejects_orca_error_json() {
-+test_remove_worktree_refuses_malformed_full_id() {
-   local out status
-+  orca_case remove-malformed-id
-+  out=$( PATH="$FB:$PATH" FM_ORCA_LOG="$LOG" FM_ORCA_RESPONSES="$RESP" \
-+    bash -c '. "$0/bin/backends/orca.sh"; fm_backend_orca_remove_worktree "repo-id::relative/path"' "$ROOT" 2>&1 )
-+  status=$?
-+  [ "$status" -ne 0 ] || fail "remove_worktree should reject a non-absolute full selector"
-+  assert_contains "$out" "malformed Orca worktree id" \
-+    "malformed full selector refusal did not identify the invalid identity"
-+  [ ! -s "$LOG" ] || fail "malformed worktree identity reached the Orca runtime"
-+  pass "fm_backend_orca_remove_worktree: malformed full ids refuse before runtime mutation"
-+}
+ test_task_binding_reuses_pi_identity_without_global_discovery() {
+   local binding identity
+   reset_identity
+@@ -561,3 +586,5 @@ test_recovery_requires_complete_inventory_and_rolls_back_pair_failure
+ test_supervisor_binding_proves_only_exact_foreground_pi
+ test_task_binding_reuses_pi_identity_without_global_discovery
+ test_real_processes_without_a_harness
 +
-+test_remove_worktree_rejects_orca_error_json() {
-+  local out status wt_id
-   orca_case remove-error-json
-+  wt_id=$(orca_worktree_id "$TMP_ROOT/remove-error-path")
-   printf '{"ok":false,"error":{"code":"worktree_not_found","message":"worktree not found"}}\n' > "$RESP/1.out"
-   out=$( PATH="$FB:$PATH" FM_ORCA_LOG="$LOG" FM_ORCA_RESPONSES="$RESP" \
--    bash -c '. "$0/bin/backends/orca.sh"; fm_backend_orca_remove_worktree wt-gone' "$ROOT" 2>&1 )
-+    bash -c '. "$0/bin/backends/orca.sh"; fm_backend_orca_remove_worktree "$1"' "$ROOT" "$wt_id" 2>&1 )
-   status=$?
-   [ "$status" -ne 0 ] || fail "remove_worktree should fail on Orca ok:false JSON"
-   assert_contains "$out" "worktree not found" "remove_worktree should surface the Orca removal error"
-   pass "fm_backend_orca_remove_worktree: fails closed on ok:false JSON"
- }
- 
-+test_remove_worktree_accepts_exact_authoritative_absence() {
-+  local out wt_path wt_id
-+  orca_case remove-exact-absent
-+  wt_path="$TMP_ROOT/already-removed-worktree"
-+  wt_id=$(orca_worktree_id "$wt_path")
-+  printf '{"ok":false,"error":{"code":"selector_not_found","message":"worktree selector not found"}}\n' > "$RESP/1.out"
-+  printf '1\n' > "$RESP/1.exit"
-+  printf '{"ok":false,"error":{"code":"selector_not_found","message":"worktree selector not found"}}\n' > "$RESP/2.out"
-+  printf '1\n' > "$RESP/2.exit"
-+
-+  out=$( PATH="$FB:$PATH" FM_ORCA_LOG="$LOG" FM_ORCA_RESPONSES="$RESP" \
-+    bash -c '. "$0/bin/backends/orca.sh"; fm_backend_orca_remove_worktree "$1"' "$ROOT" "$wt_id" 2>&1 )
-+  expect_code 0 $? "exact absent Orca worktree cleanup should be idempotent"$'\n'"$out"
-+  assert_contains "$(cat "$LOG")" $'orca\x1f''worktree'$'\x1f''show'$'\x1f''--worktree'$'\x1f''id:'"$wt_id"$'\x1f''--json' \
-+    "idempotent removal did not prove absence with the exact full selector"
-+  assert_contains "$(cat "$LOG")" $'orca\x1f''status'$'\x1f''--json' \
-+    "idempotent removal did not prove that the local Orca runtime was ready"
-+  assert_not_contains "$(cat "$LOG")" $'\x1f''--force' \
-+    "idempotent absence proof changed ordinary non-forced removal semantics"
-+  pass "fm_backend_orca_remove_worktree: exact selector absence is idempotent only after path and ready-runtime proof"
-+}
-+
-+test_remove_worktree_refuses_ambiguous_absence_response() {
-+  local out status wt_path wt_id
-+  orca_case remove-ambiguous-absence
-+  wt_path="$TMP_ROOT/ambiguous-removed-worktree"
-+  wt_id=$(orca_worktree_id "$wt_path")
-+  printf '{"ok":false,"error":{"code":"selector_not_found","message":"worktree selector not found"}}\n' > "$RESP/1.out"
-+  printf '1\n' > "$RESP/1.exit"
-+  printf '{"ok":false,"error":{"code":"selector_ambiguous","message":"worktree selector matched multiple records"}}\n' > "$RESP/2.out"
-+  printf '1\n' > "$RESP/2.exit"
-+
-+  out=$( PATH="$FB:$PATH" FM_ORCA_LOG="$LOG" FM_ORCA_RESPONSES="$RESP" \
-+    bash -c '. "$0/bin/backends/orca.sh"; fm_backend_orca_remove_worktree "$1"' "$ROOT" "$wt_id" 2>&1 )
-+  status=$?
-+  [ "$status" -ne 0 ] || fail "ambiguous worktree lookup must not prove idempotent removal"
-+  assert_contains "$out" "worktree selector matched multiple records" \
-+    "ambiguous absence refusal did not surface the authoritative lookup error"
-+  assert_not_contains "$(cat "$LOG")" $'orca\x1f''status'$'\x1f''--json' \
-+    "ambiguous worktree lookup proceeded to the ready-runtime acceptance gate"
-+  pass "fm_backend_orca_remove_worktree: ambiguous runtime lookup cannot prove absence"
-+}
-+
-+test_remove_worktree_refuses_absence_when_recorded_path_exists() {
-+  local out status wt_path wt_id
-+  orca_case remove-existing-path
-+  wt_path="$TMP_ROOT/still-existing-worktree"
-+  mkdir -p "$wt_path"
-+  wt_id=$(orca_worktree_id "$wt_path")
-+  printf '{"ok":false,"error":{"code":"selector_not_found","message":"worktree selector not found"}}\n' > "$RESP/1.out"
-+  printf '1\n' > "$RESP/1.exit"
-+
-+  out=$( PATH="$FB:$PATH" FM_ORCA_LOG="$LOG" FM_ORCA_RESPONSES="$RESP" \
-+    bash -c '. "$0/bin/backends/orca.sh"; fm_backend_orca_remove_worktree "$1"' "$ROOT" "$wt_id" 2>&1 )
-+  status=$?
-+  [ "$status" -ne 0 ] || fail "an existing recorded path must prevent idempotent removal"
-+  assert_contains "$out" "recorded path still exists" \
-+    "existing-path refusal did not identify the conflicting filesystem state"
-+  assert_not_contains "$(cat "$LOG")" $'orca\x1f''worktree'$'\x1f''show' \
-+    "existing-path refusal asked the runtime to overrule visible filesystem state"
-+  pass "fm_backend_orca_remove_worktree: an existing recorded path prevents absent cleanup"
-+}
-+
- test_remove_worktree_does_not_force_by_default() {
-   local wt_id
-   orca_case remove-without-force
-@@ -2161,7 +2238,11 @@ test_kill_rejects_empty_orca_response
- test_kill_treats_authoritative_gone_as_idempotent
- test_kill_does_not_treat_stale_handle_as_gone
- test_remove_worktree_refuses_empty_id
-+test_remove_worktree_refuses_malformed_full_id
- test_remove_worktree_rejects_orca_error_json
-+test_remove_worktree_accepts_exact_authoritative_absence
-+test_remove_worktree_refuses_ambiguous_absence_response
-+test_remove_worktree_refuses_absence_when_recorded_path_exists
- test_remove_worktree_does_not_force_by_default
- test_remove_worktree_force_requires_explicit_option
- test_remove_worktree_dispatcher_forwards_explicit_force
-diff --git a/tests/fm-orca-home-sync.test.sh b/tests/fm-orca-home-sync.test.sh
-new file mode 100755
-index 0000000..fb1bcf3
---- /dev/null
-+++ b/tests/fm-orca-home-sync.test.sh
-@@ -0,0 +1,57 @@
-+#!/usr/bin/env bash
-+# Real Git proof for named Orca home branches and guarded source updates.
-+set -eu
-+# shellcheck source=tests/fixtures.sh
-+. "$(dirname "${BASH_SOURCE[0]}")/fixtures.sh"
-+# shellcheck source=bin/fm-ff-lib.sh
-+. "$ROOT/bin/fm-ff-lib.sh"
-+fm_git_identity fmtest fmtest@example.invalid
-+case_root=$(fm_test_tmproot fm-orca-home-sync)
-+primary="$case_root/primary"
-+home="$case_root/home"
-+git init -q -b main "$primary"
-+printf '.fm-secondmate-*\nstate/\n' > "$primary/.gitignore"
-+printf 'one\n' > "$primary/version"
-+git -C "$primary" add .
-+git -C "$primary" commit -qm initial
-+git -C "$primary" worktree add -qb fm-owned "$home"
-+printf 'owned\n' > "$home/.fm-secondmate-home"
-+printf 'schema=fm-secondmate-orca.v1\nid=owned\nworktree_id=11111111-2222-4333-8444-555555555555::%s\npath=%s\n' \
-+  "$home" "$home" > "$home/.fm-secondmate-orca"
-+mkdir "$home/state"
-+printf 'retained\n' > "$home/state/task"
-+fm_orca_secondmate_branch_valid "$home" fm-owned || fail 'valid seeded branch refused'
-+[ -z "$(fm_primary_tangle_branch "$home" || true)" ] || fail 'seeded home reported as primary tangle'
-+printf 'two\n' > "$primary/version"
-+git -C "$primary" commit -qam update
-+target=$(git -C "$primary" rev-parse HEAD)
-+ff_target "$home" owned "$target" yes yes >/dev/null
-+[ "$FF_STATUS" = updated ] || fail 'named home did not fast-forward'
-+[ "$(git -C "$home" rev-parse HEAD)" = "$target" ] || fail 'wrong updated revision'
-+[ "$(cat "$home/state/task")" = retained ] || fail 'operational state changed'
-+[ "$(git -C "$home" branch --show-current)" = fm-owned ] || fail 'home branch changed'
-+printf 'three\n' > "$primary/version"
-+git -C "$primary" commit -qam next
-+next=$(git -C "$primary" rev-parse HEAD)
-+printf 'local edit\n' >> "$home/version"
-+ff_target "$home" owned "$next" yes yes >/dev/null
-+[ "$FF_STATUS" = skipped ] || fail 'dirty home advanced'
-+git -C "$home" restore version
-+git -C "$home" switch -qc feature
-+[ "$(fm_primary_tangle_branch "$home")" = feature ] || fail 'wrong branch did not alarm'
-+ff_target "$home" owned "$next" yes yes >/dev/null
-+[ "$FF_STATUS" = skipped ] || fail 'wrong branch advanced'
-+git -C "$home" switch -q fm-owned
-+cp "$home/.fm-secondmate-orca" "$case_root/marker"
-+printf 'id=owned\n' >> "$home/.fm-secondmate-orca"
-+if fm_orca_secondmate_branch_valid "$home" fm-owned; then fail 'duplicate marker accepted'; fi
-+ff_target "$home" owned "$next" yes yes >/dev/null
-+[ "$FF_STATUS" = skipped ] || fail 'invalid marker advanced'
-+cp "$case_root/marker" "$home/.fm-secondmate-orca"
-+printf 'own commit\n' > "$home/version"
-+git -C "$home" commit -qam diverged
-+before=$(git -C "$home" rev-parse HEAD)
-+ff_target "$home" owned "$next" yes yes >/dev/null
-+[ "$FF_STATUS" = skipped ] || fail 'diverged home advanced'
-+[ "$(git -C "$home" rev-parse HEAD)" = "$before" ] || fail 'diverged work changed'
-+pass 'Orca named home: exact identity, guarded fast-forward, retained state, dirty/wrong-branch/malformed/diverged refusal'
++test_supervisor_binding_from_piped_pi_tool
