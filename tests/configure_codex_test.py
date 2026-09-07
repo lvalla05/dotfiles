@@ -30,6 +30,12 @@ class ConfigureCodexTest(unittest.TestCase):
         self.assertFalse(data["profiles"]["review"]["features"]["context_management"]["experimental_mode"])
         self.assertEqual(config.merge(result), result)
 
+    def test_preserves_existing_browser_host_and_other_servers(self):
+        old = '[mcp_servers.aside]\ncommand = "/custom/aside"\nargs = ["mcp", "--host", "chosen-host"]\n[mcp_servers.other]\nurl = "https://example.invalid/mcp"\n'
+        result = config.merge(old)
+        self.assertEqual(tomllib.loads(result)["mcp_servers"], tomllib.loads(old)["mcp_servers"])
+        self.assertEqual(config.merge(result), result)
+
     def test_migrates_boolean_feature_and_preserves_other_flags(self):
         for value in ("false", "true"):
             result = config.merge(f'[features]\ncontext_management = {value}\nhooks = true')
@@ -79,7 +85,7 @@ class ConfigureCodexTest(unittest.TestCase):
             path = Path(folder) / "new" / "config.toml"
             config.main(path)
             self.assertEqual(path.stat().st_mode & 0o777, 0o600)
-            self.assertEqual(tomllib.loads(path.read_text()), dict(config.DESIRED, features={"context_management": {"experimental_mode": True}}))
+            self.assertEqual(tomllib.loads(path.read_text()), dict(config.DESIRED, features={"context_management": {"experimental_mode": True}}, mcp_servers={"aside": config.ASIDE}))
 
 if __name__ == "__main__":
     unittest.main()

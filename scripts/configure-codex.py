@@ -1,4 +1,4 @@
-"""Merge local execution and context settings without replacing account/plugin config."""
+"""Merge local execution, context and browser defaults without replacing account config."""
 import copy
 import json
 import os
@@ -10,6 +10,7 @@ import tempfile
 import tomllib
 
 DESIRED = {"approval_policy": "never", "sandbox_mode": "danger-full-access"}
+ASIDE = {"command": str(Path.home() / ".local/bin/aside"), "args": ["mcp"]}
 
 def enable_context_management(text, parsed):
     features = parsed.get("features", {})
@@ -66,6 +67,13 @@ def merge(text):
         result.append(line)
     merged = "".join(f"{key} = {json.dumps(value)}\n" for key, value in DESIRED.items()) + "".join(result)
     merged = enable_context_management(merged, parsed)
+    servers = parsed.get("mcp_servers", {})
+    if not isinstance(servers, dict):
+        raise ValueError("Expected an mcp_servers table")
+    if "aside" not in servers:
+        merged += "\n[mcp_servers.aside]\n" + "".join(
+            f"{key} = {json.dumps(value)}\n" for key, value in ASIDE.items()
+        )
     actual = tomllib.loads(merged)
     expected = dict(copy.deepcopy(parsed), **DESIRED)
     features = expected.setdefault("features", {})
@@ -73,6 +81,7 @@ def merge(text):
     if not isinstance(context, dict):
         context = features["context_management"] = {}
     context["experimental_mode"] = True
+    expected.setdefault("mcp_servers", {}).setdefault("aside", ASIDE)
     if actual != expected:
         raise ValueError("Refusing an unexpected configuration change")
     return merged

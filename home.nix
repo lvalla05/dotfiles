@@ -115,7 +115,7 @@ in
   home.file.".config/raycast/scripts".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/raycast/scripts";
   # pi coding agent: a minimal config (from kunchenguid/dotfiles, MIT-0), live-linked.
-  # The model picker favors Luna xhigh and Sol high. Sign in with /login for
+  # The model picker starts with Astra medium. Sign in with /login for
   # ChatGPT or xAI subscriptions; Pi stores credentials outside this repo.
   home.file.".pi/agent/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
@@ -144,6 +144,12 @@ in
   # vendor-neutral path. All live links.
   home.file.".agents/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+  home.file.".agents/skills/aside-browser".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/aside-browser";
+  home.file.".claude/skills/aside-browser".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/aside-browser";
+  home.file.".pi/agent/skills/aside-browser".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/aside-browser";
   home.file.".codex/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".grok/AGENTS.md".source =

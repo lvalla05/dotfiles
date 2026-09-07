@@ -1,12 +1,14 @@
 {
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-luna",
-  "defaultThinkingLevel": "xhigh",
+  "defaultModel": "gpt-6-astra",
+  "defaultThinkingLevel": "medium",
   "modelThinkingLevels": {
     "openai-codex/gpt-5.6-luna": "xhigh",
-    "openai-codex/gpt-5.6-sol": "high"
+    "openai-codex/gpt-5.6-sol": "high",
+    "openai-codex/gpt-6-astra": "medium"
   },
   "enabledModels": [
+    "openai-codex/gpt-6-astra:medium",
     "openai-codex/gpt-5.6-luna:xhigh",
     "openai-codex/gpt-5.6-sol:high",
     "openrouter/deepseek/deepseek-v4-flash:high",
