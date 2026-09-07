@@ -1,0 +1,145 @@
+#!/bin/zsh
+set -euo pipefail
+
+usage() {
+  print "Usage: pstack-setup [--check|--apply]"
+  print ""
+  print "Probe an active user-scoped pstack skill and, with --apply,"
+  print "create the bounded per-role model rule only when it is absent."
+  print "Each check sends one small account-backed Cursor request (180-second deadline)."
+}
+
+mode=check
+while (( $# > 0 )); do
+  case "$1" in
+    --check) mode=check ;;
+    --apply) mode=apply ;;
+    -h|--help) usage; exit 0 ;;
+    *) print -u2 "pstack-setup: unknown option: $1"; usage >&2; exit 2 ;;
+  esac
+  shift
+done
+
+cursor_agent="${CURSOR_AGENT:-$(command -v cursor-agent || true)}"
+if [[ -z "$cursor_agent" || ! -x "$cursor_agent" ]]; then
+  print -u2 "pstack-setup: cursor-agent is not executable or not on PATH"
+  exit 1
+fi
+
+cursor_home="$HOME/.cursor"
+rule="$cursor_home/rules/pstack-models.mdc"
+
+for dependency in jq mktemp rg python3; do
+  if ! command -v "$dependency" >/dev/null 2>&1; then
+    print -u2 "pstack-setup: missing required command: $dependency"
+    exit 1
+  fi
+done
+
+marketplaces="$("$cursor_agent" plugin marketplace list --format json)"
+if ! print -r -- "$marketplaces" | jq -e \
+  'type == "array" and any(.[]; .name == "cursor-public" and .scope == "global")' >/dev/null 2>&1; then
+  print -u2 "pstack-setup: the official cursor-public marketplace is not visible"
+  exit 1
+fi
+
+required_models=(
+  claude-fable-5-1-high
+  gemini-3.8-flash-high
+  gpt-5.6-luna-xhigh
+  gpt-5.6-sol-high
+  cursor-grok-4.6-xhigh
+)
+models="$("$cursor_agent" models)"
+for model in $required_models; do
+  if ! print -r -- "$models" | rg -F -q -- "$model -"; then
+    print -u2 "pstack-setup: required model is not available: $model"
+    exit 1
+  fi
+done
+print "verified models: ${required_models[*]}"
+
+probe_prompt='/technical-writing Use only the loaded skill instructions and do not inspect files or call tools. In the paragraph that starts "Don'"'"'t invent jargon," which three quoted replacement targets does the skill reject? Reply with only the three lowercase words joined by hyphens, in their original order.'
+if ! probe_output="$(python3 - "$cursor_agent" "$PWD" "$probe_prompt" <<'PYPROBE'
+import os, signal, subprocess, sys
+try:
+    seconds = int(os.environ.get("PSTACK_PROBE_TIMEOUT_SECONDS", "180"))
+    if not 1 <= seconds <= 180:
+        raise ValueError()
+except ValueError:
+    sys.exit("pstack-setup: probe timeout must be between 1 and 180 seconds")
+command = [sys.argv[1], "--print", "--output-format", "text", "--mode", "ask",
+           "--model", "gemini-3.8-flash-high", "--workspace", sys.argv[2], sys.argv[3]]
+process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                           text=True, start_new_session=True)
+try:
+    output, _ = process.communicate(timeout=seconds)
+except subprocess.TimeoutExpired:
+    os.killpg(process.pid, signal.SIGKILL)
+    process.communicate()
+    sys.exit("pstack-setup: Cursor skill probe timed out")
+if process.returncode:
+    sys.exit(f"pstack-setup: Cursor skill probe exited with status {process.returncode}")
+print(output.strip())
+PYPROBE
+)"; then
+  print -u2 "pstack-setup: fresh Cursor pstack skill probe failed"
+  exit 1
+fi
+if [[ "$probe_output" != evacuate-ratchet-endgame ]]; then
+  print -u2 "pstack-setup: /technical-writing was not proven active in a fresh Cursor session"
+  print -u2 "pstack-setup: install pstack with /add-plugin pstack, then retry from a trusted workspace"
+  exit 2
+fi
+print "verified active skill: /technical-writing"
+
+if [[ -e "$rule" || -L "$rule" ]]; then
+  print "model rule: preserved existing file at ${rule#$HOME/}"
+  exit 0
+fi
+
+if [[ "$mode" == check ]]; then
+  print "model rule: absent; rerun with --apply to create the bounded profile"
+  exit 0
+fi
+
+mkdir -p "${rule:h}"
+umask 077
+tmp="$(mktemp "${rule}.XXXXXX")"
+trap 'rm -f "$tmp"' EXIT
+cat > "$tmp" <<'EOF'
+---
+description: pstack bounded quality profile for Firstmate workers
+alwaysApply: true
+---
+When working on an assigned Firstmate/Orca task, Firstmate owns task state,
+dispatch, verification assignment, integration and teardown. Orca owns the
+worktree and terminal. Stay in the assigned worktree and use only the named
+quality skill. Do not spawn subagents or invoke orchestration, autonomous,
+autopilot, shipping, babysit or worktree-cleanup playbooks. Return the result
+and evidence to the owning coordinator. These restrictions apply to assigned
+worker tasks, not to an explicit user request to coordinate a separate task.
+
+# Verified account model IDs; availability is checked before creating this file.
+feature, refactoring: gpt-5.6-luna-xhigh
+bug-fix: claude-fable-5-1-high
+perf-issue: gpt-5.6-sol-high
+hillclimb: claude-fable-5-1-high
+judgment and prose: claude-fable-5-1-high
+hardest tasks: claude-fable-5-1-high
+how explorer: gemini-3.8-flash-high
+how explainer: claude-fable-5-1-high
+how critics: claude-fable-5-1-high
+why investigators: gemini-3.8-flash-high
+why synthesizer: claude-fable-5-1-high
+reflect tooling: gpt-5.6-sol-high
+reflect judgment, divergent, synthesizer: claude-fable-5-1-high
+arena runners: gpt-5.6-luna-xhigh
+arena cross-judge pool: claude-fable-5-1-high
+swarm workers: cursor-grok-4.6-xhigh
+architect runners: claude-fable-5-1-high
+interrogate reviewers: claude-fable-5-1-high
+EOF
+mv "$tmp" "$rule"
+trap - EXIT
+print "model rule: wrote ${rule#$HOME/}"

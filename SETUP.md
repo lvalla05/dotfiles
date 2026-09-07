@@ -22,8 +22,8 @@ https://github.com/lvalla05/dotfiles/blob/main/SETUP.md
 
 ```sh
 xcode-select --install          # finish Apple's dialog, then:
-git clone https://github.com/lvalla05/dotfiles.git ~/orca/projects/dotfiles
-cd ~/orca/projects/dotfiles
+git clone https://github.com/lvalla05/dotfiles.git ~/orca/dotfiles
+cd ~/orca/dotfiles
 ./bootstrap.sh                  # installs Determinate Nix, links ~/.dotfiles, first switch
 ```
 
@@ -35,26 +35,34 @@ Open a new terminal afterwards. From then on, edit files and run `rebuild` (an a
 1. GitHub over HTTPS: `gh auth login --web --git-protocol https`, then `gh auth status`.
 2. 1Password: sign in, enable Settings > Developer > SSH agent, CLI integration and Touch ID.
    The agent socket path is already declared in `home.nix`.
-3. Brain: `git clone https://github.com/lvalla05/brain.git ~/orca/projects/brain`, open it as
+3. Brain: `git clone https://github.com/lvalla05/brain.git ~/orca/brain`, open it as
    the Obsidian vault, connect Obsidian Sync on Mac and phone.
-4. Harnesses: run `agent-tools` once to install pi and the pinned agent CLIs, then sign into
+4. Harnesses: run `agent-tools pi` to install the pinned Pi CLI, then sign into
    Claude Code (`claude`), Codex (`codex login`), Grok Build (`grok`) and pi (`/login`) with the
    existing subscriptions. Do not create API keys just to sign in. Orca setup is in `WORKFLOW.md`.
+   Before its managed launcher is available, run directly from this checkout:
+
+   ```sh
+   bash home/bin/agent-tools pi
+   ```
+   pstack setup and the pinned Firstmate distribution are documented in `WORKFLOW.md`.
+   Normal Orca coordination does not require Firstmate or its supporting services.
 5. Desk: follow `DESK.md` for Raycast, Rectangle, Wispr Flow permissions and the phone.
-6. Grok Bot: open it, sign in, and set up the daily chief from the notes in brain.
-7. School: Outlook and Teams with the Georgia Tech account; Duo on the phone.
+6. Phone AI: use the current choice and qualification steps in the private brain. Confirm actual task/calendar reads and delivery before enabling routines.
+7. Organizational accounts: configure the required mail, collaboration and MFA apps on each device.
 
 ## Prove it
 
 ```sh
 ./doctor.sh
 bash tests/links.test.sh && bash tests/bootstrap.test.sh && bash tests/activation.test.sh
-gh auth status && git -C ~/orca/projects/brain ls-remote origin HEAD
-claude --version && codex --version && grok --version
+bash tests/agent-tools.test.sh && bash tests/firstmate.test.sh && bash tests/firstmate-source.test.sh && bash tests/pstack-setup.test.sh
+gh auth status && git -C ~/orca/brain ls-remote origin HEAD
+claude --version && codex --version && grok --version && pi --version
 ```
 
-Then do one real thing on each surface: a Claude Code task in a worktree, a Grok Bot request
-from the phone with the Mac closed, a Todoist task showing next to a calendar event, a note
+Then do one real thing on each needed surface: a coding task in a worktree with a tested diff,
+a fresh phone AI request with the Mac shut down, a Todoist task beside a calendar event, a note
 edited on the phone appearing on the Mac. Record what failed in brain, not here.
 
 ## Notes that save you an hour

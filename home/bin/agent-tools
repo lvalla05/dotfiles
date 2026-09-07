@@ -1,33 +1,68 @@
 #!/usr/bin/env bash
-# Install the pinned agent CLIs listed in agent-tools.lock into ~/.local/bin.
-# Idempotent: re-running installs exactly the pinned versions again.
-# Go tools build from source (telemetry off); npm tools land under ~/.local
-# because ~/.npmrc sets prefix there. Nothing here needs sudo.
+# Install all or selected pinned CLIs from agent-tools.lock into ~/.local/bin.
+# Explicit prefixes make this work before the managed ~/.npmrc link is active.
 set -euo pipefail
 here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"
 lock="$here/agent-tools.lock"
-export GOBIN="$HOME/.local/bin"
-export GOTOOLCHAIN="${GOTOOLCHAIN:-auto}"   # fetch a newer Go toolchain if a module demands it
-mkdir -p "$HOME/.local/bin"
-command -v go >/dev/null || { echo "go is missing; run ./rebuild.sh first"; exit 1; }
-command -v npm >/dev/null || { echo "npm is missing; run ./rebuild.sh first"; exit 1; }
-
+names=() kinds=() packages=() versions=()
 while read -r kind name version _; do
   case "$kind" in
     ''|'#'*) continue ;;
-    go)  printf '==> go install %s@%s\n' "$name" "$version"; go install "$name@$version" ;;
-    npm) printf '==> npm install -g %s@%s\n' "$name" "$version"; npm install -g "$name@$version" ;;
-    npmx) printf '==> npm install -g --ignore-scripts %s@%s\n' "$name" "$version"; npm install -g --ignore-scripts "$name@$version" ;;
+    go|npm|npmx) ;;
     *)   echo "unknown kind '$kind' in $lock"; exit 1 ;;
   esac
+  if [ -z "$name" ] || [[ ! "$version" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+    echo "unpinned or malformed entry '$kind $name $version' in $lock" >&2
+    exit 1
+  fi
+  short="${name##*/}"
+  [ "$name" != '@earendil-works/pi-coding-agent' ] || short=pi
+  for existing in "${names[@]}"; do
+    [ "$existing" != "$short" ] || { echo "duplicate tool '$short' in $lock" >&2; exit 1; }
+  done
+  names+=("$short"); kinds+=("$kind"); packages+=("$name"); versions+=("$version")
 done < "$lock"
 
+if [ "${1:-}" = --list ]; then
+  for i in "${!names[@]}"; do printf '%-14s %s@%s\n' "${names[$i]}" "${packages[$i]}" "${versions[$i]}"; done
+  exit 0
+fi
+if [ "${1:-}" = --help ] || [ "${1:-}" = -h ]; then
+  echo 'Usage: agent-tools [--list | tool ...]'
+  echo 'No arguments installs all pinned tools. Example: agent-tools pi quota-axi'
+  exit 0
+fi
 
-# Skills (Agent Skills standard) for every detected harness, via Vercel's skills CLI.
-# -y answers the prompts; -g installs for all projects. Failure here is not fatal.
-for spec in "kunchenguid/lavish-axi --skill lavish" "kunchenguid/quota-axi --skill quota-axi"; do
-  # shellcheck disable=SC2086 # the spec is intentionally word-split into arguments
-  npx -y skills@1.5.23 add $spec -g -y || echo "warn: skill install failed for $spec"
+selected=()
+if [ "$#" = 0 ]; then
+  selected=("${!names[@]}")
+else
+  for requested in "$@"; do
+    found=false
+    for i in "${!names[@]}"; do
+      if [ "$requested" = "${names[$i]}" ]; then selected+=("$i"); found=true; break; fi
+    done
+    if [ "$found" = false ]; then echo "unknown tool '$requested'; run agent-tools --list" >&2; exit 1; fi
+  done
+fi
+
+# Validate every selection and required installer before the first package mutation.
+for i in "${selected[@]}"; do
+  installer=npm
+  [ "${kinds[$i]}" != go ] || installer=go
+  command -v "$installer" >/dev/null || { echo "$installer is missing; run ./rebuild.sh first" >&2; exit 1; }
 done
-echo "==> installed:"; for b in pi treehouse lavish-axi quota-axi gh-axi gnhf; do
-  printf '    %-12s %s\n' "$b" "$(command -v "$b" 2>/dev/null || echo MISSING)"; done
+export GOBIN="$HOME/.local/bin"
+export GOTOOLCHAIN="${GOTOOLCHAIN:-auto}"
+mkdir -p "$GOBIN"
+for i in "${selected[@]}"; do
+  package="${packages[$i]}@${versions[$i]}"
+  printf '==> install %s\n' "$package"
+  case "${kinds[$i]}" in
+    go) go install "$package" ;;
+    npm) npm install --global --prefix "$HOME/.local" "$package" ;;
+    npmx) npm install --global --ignore-scripts --prefix "$HOME/.local" "$package" ;;
+  esac
+done
+
+echo '==> selected tools installed; global skills are separate, explicit installs'

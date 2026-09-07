@@ -16,6 +16,12 @@ done < <(grep -oE 'dotfiles}/[^"]+' "$DIR/home.nix" | sed 's|dotfiles}/||' | sor
 [ "$(wc -l < "$DIR/home/AGENTS.md")" -le 25 ] || say_fail "home/AGENTS.md is over 25 lines; it is loaded into every session"
 grep -qx '@AGENTS.md' "$DIR/CLAUDE.md" || say_fail "CLAUDE.md must import AGENTS.md with a bare @AGENTS.md line"
 
+# Credential state must remain outside the public Pi configuration.
+if find "$DIR/home/.pi" -name auth.json -print -quit | grep -q . \
+  || grep -RqE 'sk-[A-Za-z0-9_-]+' "$DIR/home/.pi"; then
+  say_fail "Pi config: credentials or auth.json found in the public repo"
+fi
+
 # the human-facing docs bootstrap.sh and the README point at
 [ -f "$DIR/README.md" ] || say_fail "README.md is missing"
 [ -f "$DIR/SETUP.md" ] || say_fail "SETUP.md is missing"
@@ -64,9 +70,17 @@ if declaration=$(nix eval --json "$DIR#darwinConfigurations.mac.config" --apply 
     taps = map (x: { inherit (x) name trusted; }) c.homebrew.taps;
     grok = builtins.fromTOML (builtins.readFile c.environment.etc."grok/requirements.toml".source);
     homeDirectory = hm.home.homeDirectory;
+    piInstructionsMatch = toString hm.home.file.".pi/agent/AGENTS.md".source == toString hm.home.file.".codex/AGENTS.md".source;
+    piExtensionTargets = map (x: x.target) (builtins.attrValues hm.home.file);
     sshAuthSock = hm.home.sessionVariables.SSH_AUTH_SOCK;
     sshConfig = hm.home.file.".ssh/config".text;
   }'); then
+  jq -e ' .piInstructionsMatch == true' <<< "$declaration" >/dev/null \
+    || say_fail "Nix declaration: Pi and Codex must share the same global instruction source"
+  jq -e '.piExtensionTargets | index(".pi/agent/extensions") == null and
+    index(".pi/agent/extensions/calm") != null and
+    index(".pi/agent/extensions/terminal-status-title.js") != null' <<< "$declaration" >/dev/null \
+    || say_fail "Nix declaration: leave Pi extensions parent writable for Orca runtime hooks"
   jq -e '.casks as $installed |
     all(["claude", "claude-code@latest", "chatgpt", "codex", "grok-build", "1password",
          "ghostty", "google-chrome", "aside", "microsoft-outlook", "stablyai/orca/orca"][];
@@ -104,10 +118,11 @@ nix shell --inputs-from "$DIR" nixpkgs#python3 --command python3 "$DIR/tests/con
 
 # scripts parse
 for s in "$DIR"/bootstrap.sh "$DIR"/rebuild.sh "$DIR"/doctor.sh "$DIR"/tests/*.sh; do bash -n "$s" || say_fail "$s does not parse"; done
-shellcheck "$DIR/bootstrap.sh" "$DIR/rebuild.sh" "$DIR/doctor.sh" "$DIR"/tests/*.sh "$DIR"/home/.config/raycast/scripts/*.sh || say_fail "ShellCheck failed"
+shellcheck "$DIR/bootstrap.sh" "$DIR/rebuild.sh" "$DIR/doctor.sh" "$DIR"/tests/*.sh "$DIR"/home/.config/raycast/scripts/*.sh "$DIR/home/bin/agent-tools" || say_fail "ShellCheck failed"
 
-# no em dash in anything an agent reads
-if git -C "$DIR" ls-files -z 2>/dev/null | (cd "$DIR" && xargs -0 grep -lF $'\xe2\x80\x94' 2>/dev/null) | grep -q .; then say_fail "em dash found in a tracked file"; fi
+# Repository prose uses plain punctuation. Compatibility patches preserve
+# upstream source verbatim; their content is validated by the installer checks.
+if git -C "$DIR" ls-files -z -- . ':!home/share/firstmate/*.patch' 2>/dev/null | (cd "$DIR" && xargs -0 grep -lF $'\xe2\x80\x94' 2>/dev/null) | grep -q .; then say_fail "em dash found in a tracked source file"; fi
 
 if [ "$fail" = 0 ]; then echo "ok: file contracts, settings, evaluated Nix policy, lock data, shell syntax/lint, no em dash"; fi
 exit "$fail"

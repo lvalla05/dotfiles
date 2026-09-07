@@ -1,0 +1,303 @@
+#!/usr/bin/env bash
+# Install, verify, or launch the locally pinned Firstmate agent distro.
+set -euo pipefail
+
+repository=https://github.com/kunchenguid/firstmate.git
+revision=a913539423076f12a7034c73e06e2e84653024a8
+install_root="${FIRSTMATE_INSTALL_ROOT:-$HOME/.local/share/firstmate}"
+bin_dir="${FIRSTMATE_BIN_DIR:-$HOME/.local/bin}"
+script_path="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)/$(basename "${BASH_SOURCE[0]}")"
+base_revision=$revision
+support_dir="$(dirname "$script_path")/../share/firstmate"
+compatibility_manifest="$support_dir/orca.lock.json"
+compatibility_patch="$support_dir/orca.patch"
+compatibility_tree=
+
+load_compatibility() {
+  [ -f "$compatibility_manifest" ] || return 0
+  need jq
+  need shasum
+  jq -e --arg base "$base_revision" '
+    .baseRevision == $base and
+    (.revision | type == "string" and test("^[0-9a-f]{40}$")) and
+    (.tree | type == "string" and test("^[0-9a-f]{40}$")) and
+    (.patchSha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+    ((.history // []) | type == "array" and length <= 64 and all(.[];
+      (.revision | type == "string" and test("^[0-9a-f]{40}$")) and
+      (.tree | type == "string" and test("^[0-9a-f]{40}$")) and
+      (.patchSha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+      (.patch | type == "string" and test("^[A-Za-z0-9_-]+[.]patch$"))))
+  ' "$compatibility_manifest" >/dev/null || fail 'invalid Orca compatibility manifest'
+  [ -f "$compatibility_patch" ] || fail 'Orca compatibility patch is missing'
+  [ "$(shasum -a 256 "$compatibility_patch" | cut -d ' ' -f 1)" = "$(jq -r .patchSha256 "$compatibility_manifest")" ] \
+    || fail 'Orca compatibility patch checksum differs'
+  revision=$(jq -r .revision "$compatibility_manifest")
+  compatibility_tree=$(jq -r .tree "$compatibility_manifest")
+  local history_patch history_sha
+  while IFS=$'\t' read -r history_patch history_sha; do
+    [ -n "$history_patch" ] || continue
+    [ -f "$support_dir/$history_patch" ] || fail 'compatibility history patch is missing'
+    [ "$(shasum -a 256 "$support_dir/$history_patch" | cut -d ' ' -f 1)" = "$history_sha" ] \
+      || fail 'compatibility history patch checksum differs'
+  done < <(jq -r '.history // [] | .[] | [.patch, .patchSha256] | @tsv' "$compatibility_manifest")
+}
+
+prepare_compatibility_step() { # <parent> <patch> <tree> <revision> <sha256>
+  local parent=$1 patch=$2 expected_tree=$3 expected_revision=$4 expected_sha=$5
+  local temporary_index tree generated_revision
+  [ -f "$patch" ] || fail 'compatibility history patch is missing'
+  [ "$(shasum -a 256 "$patch" | cut -d ' ' -f 1)" = "$expected_sha" ] \
+    || fail 'compatibility history patch checksum differs'
+  temporary_index=$(mktemp "${TMPDIR:-/tmp}/firstmate-index.XXXXXX")
+  rm -f "$temporary_index"
+  # A separate index reconstructs history without touching operational state.
+  if ! (
+    export GIT_INDEX_FILE="$temporary_index"
+    git -C "$install_root" read-tree "$parent" &&
+      git -C "$install_root" apply --cached "$patch" &&
+      git -C "$install_root" write-tree
+  ) > "$temporary_index.tree"; then
+    rm -f "$temporary_index" "$temporary_index.tree"
+    fail 'could not reconstruct the Orca compatibility tree'
+  fi
+  tree=$(cat "$temporary_index.tree")
+  rm -f "$temporary_index" "$temporary_index.tree"
+  [ "$tree" = "$expected_tree" ] || fail 'reconstructed compatibility tree differs'
+  generated_revision=$(printf '%s\n' 'Orca runtime compatibility' | \
+    GIT_AUTHOR_NAME='Firstmate local distribution' GIT_AUTHOR_EMAIL='firstmate@localhost' \
+    GIT_COMMITTER_NAME='Firstmate local distribution' GIT_COMMITTER_EMAIL='firstmate@localhost' \
+    GIT_AUTHOR_DATE='2000-01-01T00:00:00 +0000' GIT_COMMITTER_DATE='2000-01-01T00:00:00 +0000' \
+    git -C "$install_root" commit-tree "$tree" -p "$parent")
+  [ "$generated_revision" = "$expected_revision" ] || fail 'reconstructed compatibility revision differs'
+  printf '%s' "$generated_revision"
+}
+
+prepare_compatibility_commit() {
+  [ -n "$compatibility_tree" ] || return 0
+  local parent=$base_revision history_revision history_tree history_patch history_sha
+  while IFS=$'\t' read -r history_revision history_tree history_patch history_sha; do
+    [ -n "$history_revision" ] || continue
+    parent=$(prepare_compatibility_step "$parent" "$support_dir/$history_patch" \
+      "$history_tree" "$history_revision" "$history_sha") || fail 'could not reconstruct compatibility history'
+  done < <(jq -r '.history // [] | .[] | [.revision, .tree, .patch, .patchSha256] | @tsv' "$compatibility_manifest")
+  prepare_compatibility_step "$parent" "$compatibility_patch" "$compatibility_tree" \
+    "$revision" "$(jq -r .patchSha256 "$compatibility_manifest")" >/dev/null
+}
+
+usage() {
+  cat <<EOF
+Usage: firstmate <install|verify|launch>
+
+  install  install and configure Firstmate at $install_root
+  verify   verify the source pin and local configuration
+  launch   verify, start Orca supervision, then launch the pinned Pi primary
+
+Pinned revision: $revision
+EOF
+}
+
+fail() { echo "firstmate: $*" >&2; exit 1; }
+need() { command -v "$1" >/dev/null || fail "$1 is required"; }
+
+require_absolute_paths() {
+  case "$install_root" in /*) ;; *) fail "FIRSTMATE_INSTALL_ROOT must be absolute" ;; esac
+  case "$bin_dir" in /*) ;; *) fail "FIRSTMATE_BIN_DIR must be absolute" ;; esac
+}
+
+dispatch_config() {
+  cat <<'EOF'
+{
+  "rules": [
+    {
+      "when": "The task is explicitly marked pstack-worker and names exactly one bounded pstack quality skill, with no subagents, orchestration, worktree management, shipping, babysitting, relay, or autonomous playbook.",
+      "use": {
+        "harness": "cursor",
+        "model": "gpt-5.6-sol-high"
+      },
+      "why": "Use Cursor only for the reviewed single-worker pstack lane inside the Firstmate-owned Orca worktree."
+    }
+  ],
+  "default": {
+    "harness": "pi",
+    "model": "openai-codex/gpt-5.6-luna",
+    "effort": "xhigh"
+  }
+}
+EOF
+}
+
+launch_allowlist() {
+  cat <<'EOF'
+# Intentionally no extra ambient variables.
+# Add only a required variable name after reviewing its provider or Git transport.
+EOF
+}
+
+ensure_content() { # <path>, expected content on stdin
+  local target=$1 expected
+  expected=$(cat)
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    [ -f "$target" ] || fail "$target exists but is not a regular file"
+    [ "$(cat "$target")" = "$expected" ] || fail "$target differs; refusing to overwrite local configuration"
+    return
+  fi
+  printf '%s\n' "$expected" > "$target"
+  chmod 600 "$target"
+}
+
+check_content() { # <path>, expected content on stdin
+  local target=$1 expected
+  expected=$(cat)
+  [ -f "$target" ] || fail "$target is missing or is not a regular file"
+  [ "$(cat "$target")" = "$expected" ] || fail "$target differs from the pinned local configuration"
+}
+
+verify_source() {
+  [ -d "$install_root/.git" ] || fail "$install_root is not a Git checkout"
+  [ "$(git -C "$install_root" remote get-url origin)" = "$repository" ] \
+    || fail "$install_root has an unexpected origin"
+  [ "$(git -C "$install_root" rev-parse HEAD)" = "$revision" ] \
+    || fail "$install_root is not at pinned revision $revision"
+  [ "$(git -C "$install_root" symbolic-ref --short HEAD)" = main ] \
+    || fail "$install_root must keep the updateable main branch checked out"
+  [ "$(git -C "$install_root" rev-parse --abbrev-ref '@{upstream}')" = origin/main ] \
+    || fail "$install_root main branch must track origin/main"
+  [ -z "$(git -C "$install_root" status --porcelain)" ] \
+    || fail "$install_root has unexpected worktree changes"
+  [ -f "$install_root/AGENTS.md" ] && [ -x "$install_root/bin/fm-bootstrap.sh" ] \
+    || fail "$install_root does not contain the expected Firstmate source"
+}
+
+advance_to_pin() {
+  [ -d "$install_root/.git" ] || fail "$install_root is not a Git checkout"
+  [ "$(git -C "$install_root" remote get-url origin)" = "$repository" ] \
+    || fail "$install_root has an unexpected origin"
+  [ "$(git -C "$install_root" symbolic-ref --short HEAD)" = main ] \
+    || fail "$install_root must keep the updateable main branch checked out"
+  [ "$(git -C "$install_root" rev-parse --abbrev-ref '@{upstream}')" = origin/main ] \
+    || fail "$install_root main branch must track origin/main"
+  [ -z "$(git -C "$install_root" status --porcelain)" ] \
+    || fail "$install_root has unexpected worktree changes"
+  if [ "$(git -C "$install_root" rev-parse HEAD)" = "$revision" ]; then
+    return 0
+  fi
+  git -C "$install_root" fetch --quiet --filter=blob:none origin \
+    "$base_revision" '+refs/heads/main:refs/remotes/origin/main'
+  git -C "$install_root" merge-base --is-ancestor "$base_revision" origin/main \
+    || fail "pinned upstream revision is not on origin/main"
+  prepare_compatibility_commit
+  git -C "$install_root" merge-base --is-ancestor HEAD "$revision" \
+    || fail "installed revision cannot fast-forward to the pin"
+  git -C "$install_root" merge --quiet --ff-only "$revision"
+}
+
+install_config() {
+  printf '%s\n' orca | ensure_content "$install_root/config/backend"
+  printf '%s\n' pi | ensure_content "$install_root/config/crew-harness"
+  dispatch_config | ensure_content "$install_root/config/crew-dispatch.json"
+  launch_allowlist | ensure_content "$install_root/config/launch-env-allowlist"
+  verify_config
+}
+
+verify_config() {
+  printf '%s\n' orca | check_content "$install_root/config/backend"
+  printf '%s\n' pi | check_content "$install_root/config/crew-harness"
+  dispatch_config | check_content "$install_root/config/crew-dispatch.json"
+  launch_allowlist | check_content "$install_root/config/launch-env-allowlist"
+  jq -e '
+    .rules == [{
+      "when": "The task is explicitly marked pstack-worker and names exactly one bounded pstack quality skill, with no subagents, orchestration, worktree management, shipping, babysitting, relay, or autonomous playbook.",
+      "use": {"harness": "cursor", "model": "gpt-5.6-sol-high"},
+      "why": "Use Cursor only for the reviewed single-worker pstack lane inside the Firstmate-owned Orca worktree."
+    }] and
+    .default == {"harness": "pi", "model": "openai-codex/gpt-5.6-luna", "effort": "xhigh"}
+  ' "$install_root/config/crew-dispatch.json" >/dev/null \
+    || fail "crew-dispatch.json does not match the supported pinned profile"
+  [ ! -e "$install_root/.env" ] || fail "$install_root/.env exists; Relay must remain disabled for this installation"
+}
+
+verify_runtime() {
+  local status bootstrap_output readiness_problem=false line
+  for tool in node git gh jq no-mistakes gh-axi chrome-devtools-axi lavish-axi tasks-axi quota-axi orca pi; do
+    need "$tool"
+  done
+  status=$(orca status --json)
+  jq -e '.result.runtime.reachable == true and .result.runtime.state == "ready"' <<< "$status" >/dev/null \
+    || fail "Orca is not reachable and ready"
+  if ! bootstrap_output=$(FM_BOOTSTRAP_DETECT_ONLY=1 FM_BOOTSTRAP_NETWORK=skip \
+    "$install_root/bin/fm-bootstrap.sh"); then
+    [ -z "$bootstrap_output" ] || printf '%s\n' "$bootstrap_output" >&2
+    fail "Firstmate bootstrap detection failed"
+  fi
+  while IFS= read -r line; do
+    case "$line" in
+      ''|'BOOTSTRAP_INFO:'*) ;;
+      *) readiness_problem=true ;;
+    esac
+  done <<< "$bootstrap_output"
+  if [ "$readiness_problem" = true ]; then
+    printf '%s\n' "$bootstrap_output" >&2
+    fail "Firstmate bootstrap reported readiness problems"
+  fi
+}
+
+install_firstmate() {
+  require_absolute_paths
+  need git
+  need jq
+  if [ ! -e "$install_root" ] && [ ! -L "$install_root" ]; then
+    mkdir -p "$(dirname "$install_root")"
+    git init --quiet --initial-branch=__firstmate_install__ "$install_root"
+    git -C "$install_root" remote add origin "$repository"
+    git -C "$install_root" fetch --quiet --filter=blob:none origin "$base_revision"
+    prepare_compatibility_commit
+    git -C "$install_root" switch --quiet --create main "$revision"
+    git -C "$install_root" fetch --quiet --filter=blob:none origin '+refs/heads/main:refs/remotes/origin/main'
+    git -C "$install_root" branch --set-upstream-to=origin/main main >/dev/null
+  else
+    advance_to_pin
+  fi
+  verify_source
+  umask 077
+  install -d -m 700 "$install_root/config" "$bin_dir"
+  install_config
+  if [ -e "$bin_dir/firstmate" ] || [ -L "$bin_dir/firstmate" ]; then
+    [ -L "$bin_dir/firstmate" ] || fail "$bin_dir/firstmate exists and is not a symlink"
+    [ "$(readlink -f "$bin_dir/firstmate")" = "$script_path" ] \
+      || fail "$bin_dir/firstmate points somewhere else"
+  else
+    ln -s "$script_path" "$bin_dir/firstmate"
+  fi
+  echo "firstmate: installed $revision at $install_root"
+  echo "firstmate: hooks were not installed; review their proposed config changes first"
+}
+
+verify_firstmate() {
+  require_absolute_paths
+  need git
+  need jq
+  verify_source
+  verify_config
+  verify_runtime
+  echo "firstmate: source, configuration, required tools, and Orca readiness verified"
+}
+
+load_compatibility
+
+case "${1:-launch}" in
+  install) [ "$#" -eq 1 ] || fail 'install takes no arguments'; install_firstmate ;;
+  verify) [ "$#" -eq 1 ] || fail 'verify takes no arguments'; verify_firstmate ;;
+  launch)
+    [ "$#" -eq 1 ] || fail 'launch takes no arguments'
+    verify_firstmate
+    cd "$install_root"
+    export FM_HOME="${FM_HOME:-$install_root}"
+    [ ! -e "$FM_HOME/state/.afk-orca-primary-process" ] \
+      || fail 'a supervisor binding exists; stop the previous session with bin/fm-afk-launch.sh stop before launching again'
+    # Enroll this terminal before exec preserves the process identity in Pi.
+    "$install_root/bin/fm-afk-launch.sh" start
+    exec pi --model openai-codex/gpt-5.6-luna --thinking xhigh
+    ;;
+  --help|-h|help) usage ;;
+  *) usage >&2; exit 1 ;;
+esac

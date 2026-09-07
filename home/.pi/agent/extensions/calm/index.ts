@@ -3,7 +3,7 @@
 // Adapted from the Firstmate project's Calm implementation.
 // Copyright (c) 2026 Kun Chen. MIT License - see the LICENSE file in this directory.
 //
-// Verified against Pi 0.82.0, which exports its shared tool-row component,
+// Verified against Pi 0.85.1, which exports its shared tool-row component,
 // session_start replacement reasons, agent_start
 // and agent_settled, ExtensionUIContext.setToolsExpanded(), setWorkingVisible(),
 // setWidget() with a disposable component factory, and setHiddenThinkingLabel().

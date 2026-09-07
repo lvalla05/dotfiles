@@ -1,55 +1,51 @@
 # The desk: Mac and phone
 
-One launcher (Raycast), one window manager (Rectangle), an empty hidden Dock, and the same
-few surfaces on both devices. Nothing here needs a subscription beyond what is already paid.
+Raycast launches apps, Rectangle manages windows, and the Dock stays empty and hidden.
+The public configuration supplies controls and applications. Personal account choices,
+notifications, schedules and the current phone AI entry point live in the private brain.
 
 ## Mac controls
 
 | Control | Result |
 | --- | --- |
-| Command-Space | Raycast: launch apps, calculate, find files |
-| Control-Option-V | Raycast clipboard history (seven days) |
+| Command-Space | Raycast: apps, calculations and files |
+| Control-Option-V | Raycast clipboard history |
 | Control-Option-Left / Right / Return | Rectangle left half / right half / maximize |
-| Raycast: Today | Todoist Today with Google Calendar events shown beside tasks |
-| Raycast: Chief | Grok Bot, the daily executive |
-| Raycast: Build | Ghostty (herdr session with the agent panel) |
-| Raycast: Brain | The START note in the brain vault |
+| Raycast: Today | Todoist Today |
+| Raycast: Chief | Grok Bot launcher; qualify the account before relying on it |
+| Raycast: Build | Ghostty; Orca is available for visual project work |
+| Raycast: Brain | START note in the private brain vault |
 
-After a rebuild: in Raycast Settings > Extensions add the script directory
-`~/.config/raycast/scripts`, set the clipboard hotkey, enable launch at login. Open Rectangle
-once and grant Accessibility. Grant Wispr Flow microphone and Accessibility. Import a private
-Raycast `.rayconfig` export if one exists; it never goes in this repo.
+After rebuilding, add `~/.config/raycast/scripts` in Raycast Settings > Extensions. Configure
+its clipboard shortcut and launch at login. Grant Rectangle Accessibility and Wispr Flow the
+microphone and Accessibility permissions it needs. Private Raycast exports stay outside Git.
 
-In Todoist, connect Google Calendar (Settings > Calendars, show events on) and keep
-task-to-calendar sync off. Google Calendar owns time. Todoist owns tasks. Brain owns memory.
-Do not add a second calendar app or a second task app.
+For Computer Use, use `orca computer permissions --json`, then test a real window read with
+`orca computer get-app-state --app <bundle-id> --json`. A granted permission alone does not
+prove the capture works. If the provider reports stale Accessibility, refresh that permission
+in macOS Settings and inspect the intended window again.
 
-## Daily surfaces
+## Phone surfaces
 
-Mac: Grok Bot, Google Calendar, Todoist, Gmail, Obsidian, the browser, Ghostty.
-Technical work opens Claude Code, Codex or pi inside herdr; Claude and ChatGPT desktop apps
-stay available for Cowork and cloud tasks. Everything else lives in Raycast, not the Dock.
+Use one primary AI conversation for delegating work. Calendar and Todoist remain direct views
+of time and tasks; a lookup browser can serve quick research. Keep additional AI clients in
+App Library unless they perform a distinct job. Choose the actual products and notification
+rules in the private brain, where they can change without leaking personal context here.
 
-## Phone
+Install phone apps through the App Store; the Mac declaration does not install them. Set up
+1Password first, then the task, calendar, mail, research and required organizational apps.
+Obsidian uses Sync between devices; Git stays on the Mac. An agenda widget and a Today task
+widget can show the day without opening several AI conversations.
 
-Phone apps come from the App Store; the Mac declaration does not install them.
+Google Calendar owns accepted time and Todoist owns task identity/completion. When connecting
+them, decide explicitly whether tasks should also appear as calendar events; duplicate writes
+from a planner and task sync can produce conflicting blocks. Only one system should schedule
+a particular routine. A notification should call for an action or decision, not repeat a
+summary already available elsewhere.
 
-1. 1Password first; it unlocks everything else.
-2. Grok Bot: the daily chief. Comet (Perplexity) as the browser, set as default.
-3. Obsidian with the brain vault on Obsidian Sync. Git stays on the Mac.
-4. Todoist and Google Calendar, same accounts as the Mac.
-5. Gmail. Outlook and Teams for Georgia Tech and TE Connectivity only.
-6. Wispr Flow keyboard. Duo Mobile. Canvas. Claude and ChatGPT for their mobile features.
-7. Transact eAccounts and TransLoc when Georgia Tech needs them.
+## Verify the connection
 
-One home page: calendar agenda widget and Todoist Today widget on top; Grok Bot, Obsidian,
-Gmail, Outlook; Todoist, Google Calendar, 1Password, Claude. Dock: Phone, Messages, Comet,
-Camera. Everything else stays in App Library. Study, Personal and Sleep Focus modes silence
-marketing and duplicate agent notifications and keep people, deadlines and security alerts.
-
-## What phone access to agents means
-
-Grok Bot runs in the cloud and works with the Mac off. Claude Code Remote Control and Codex
-cloud tasks are opt-in ways to reach a session from the phone; they need the Mac awake or a
-cloud session, not a VPN. There is no always-on home server in this setup, so nothing here
-depends on one.
+Read a known task and calendar event through the chosen AI runtime. Check source identifiers,
+current dates and failure behavior. Then issue a new phone request with the Mac shut down and
+confirm delivery. A cloud runtime can operate elsewhere; remote control of the Mac cannot.
+Verify a phone Obsidian edit reaches the Mac as a separate test. Keep actual results in brain.

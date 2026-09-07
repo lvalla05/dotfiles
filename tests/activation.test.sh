@@ -104,4 +104,43 @@ for expected_links in 1 0; do
   grep -Fxq "sudo /run/current-system/sw/bin/darwin-rebuild switch --flake $TEST_DIR/primary#mac" "$TEST_CALLS"
 done
 
-echo "ok: linked worktrees, root, and conflicting links rejected; feature branch allowed; primary link created once"
+# Exercise doctor.sh's Home Manager collision rules without touching the real home directory.
+# shellcheck source=../doctor.sh
+# shellcheck disable=SC1091
+source "$DIR/doctor.sh"
+DOCTOR_FILES="$TEST_DIR/home-files"
+DOCTOR_HOME="$TEST_DIR/home"
+DOCTOR_OUTPUT="$TEST_DIR/doctor-output"
+mkdir -p "$DOCTOR_FILES" "$DOCTOR_HOME"
+for name in managed foreign absent regular; do
+  printf 'managed %s\n' "$name" > "$DOCTOR_FILES/$name"
+done
+printf 'foreign\n' > "$TEST_DIR/foreign-source"
+command ln -s "$DOCTOR_FILES/managed" "$DOCTOR_HOME/managed"
+printf 'retained\n' > "$DOCTOR_HOME/managed.backup"
+command ln -s "$TEST_DIR/foreign-source" "$DOCTOR_HOME/foreign"
+printf 'retained\n' > "$DOCTOR_HOME/foreign.backup"
+printf 'retained\n' > "$DOCTOR_HOME/absent.backup"
+printf 'local change\n' > "$DOCTOR_HOME/regular"
+printf 'older change\n' > "$DOCTOR_HOME/regular.backup"
+
+fail=0
+check_home_manager_collisions "$DOCTOR_FILES" "$DOCTOR_HOME" "$DOCTOR_FILES" > "$DOCTOR_OUTPUT"
+[ "$fail" -eq 1 ]
+grep -Fq "$DOCTOR_HOME/foreign is a foreign symlink" "$DOCTOR_OUTPUT"
+grep -Fq "$DOCTOR_HOME/regular is a real file/dir and $DOCTOR_HOME/regular.backup already exists" "$DOCTOR_OUTPUT"
+if grep -Fq "$DOCTOR_HOME/managed.backup" "$DOCTOR_OUTPUT"; then
+  echo "FAIL managed target's retained backup was treated as a collision"
+  exit 1
+fi
+if grep -Fq "$DOCTOR_HOME/absent.backup" "$DOCTOR_OUTPUT"; then
+  echo "FAIL absent target's retained backup was treated as a collision"
+  exit 1
+fi
+
+command rm "$DOCTOR_HOME/foreign"
+fail=0
+check_home_manager_collisions "$DOCTOR_FILES" "$DOCTOR_HOME" "$DOCTOR_FILES" > "$DOCTOR_OUTPUT"
+[ "$fail" -eq 0 ]
+
+echo "ok: activation guards and Home Manager collision behavior verified"

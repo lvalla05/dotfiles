@@ -8,10 +8,61 @@ ok()   { printf 'ok    %s\n' "$1"; }
 bad()  { printf 'FAIL  %s\n      fix: %s\n' "$1" "$2"; fail=1; }
 warn() { printf 'warn  %s\n      %s\n' "$1" "$2"; }
 
+is_home_manager_link() {
+  local link="$1" current_files="${2:-}"
+  case "$link" in
+    /nix/store/*-home-manager-files/*) return 0 ;;
+  esac
+  [ -n "$current_files" ] && [[ "$link" = "$current_files"/* ]]
+}
+
+current_home_manager_files() {
+  local p link
+  for p in "$@"; do
+    [ -L "$HOME/$p" ] || continue
+    link="$(readlink "$HOME/$p")"
+    case "$link" in
+      /nix/store/*-home-manager-files/*)
+        printf '%s-home-manager-files\n' "${link%%-home-manager-files/*}"
+        return 0
+        ;;
+    esac
+  done
+  return 1
+}
+
+check_home_manager_collisions() {
+  local home_files="$1" target_home="$2" current_files="${3:-}"
+  local source relative target link backup
+  while IFS= read -r -d '' source; do
+    relative="${source#"$home_files"/}"
+    target="$target_home/$relative"
+    [ -e "$target" ] || continue
+    link="$(readlink "$target" 2>/dev/null || true)"
+    is_home_manager_link "$link" "$current_files" && continue
+    cmp -s "$source" "$target" && continue
+    if [ -L "$target" ]; then
+      bad "$target is a foreign symlink that differs from Home Manager's source" "move it aside before ./rebuild.sh"
+    else
+      backup="$target.backup"
+      if [ -e "$backup" ]; then
+        warn "$target is a real file/dir and $backup already exists" "home-manager will replace the backup, then move the current target there"
+      else
+        warn "$target is a real file/dir" "home-manager will move it to $backup on switch"
+      fi
+    fi
+  done < <(find -H "$home_files" \( -type f -o -type l \) -print0)
+}
+
+main() {
+fail=0
+
 # 1. Where am I and is this the durable checkout?
 branch="$(git -C "$DIR" symbolic-ref --quiet --short HEAD 2>/dev/null || echo detached)"
-if [ "$branch" = main ]; then ok "on main"; else
-  bad "checkout is on '$branch', not main" "git -C '$DIR' switch main   (merge or pull the branch you want first)"; fi
+if [ "$branch" = detached ]; then
+  bad "checkout has a detached HEAD" "switch to the branch you intend to activate in the primary clone"
+elif [ "$branch" = main ]; then ok "on main"; else
+  warn "activating feature branch '$branch' in the primary clone" "review its diff before ./rebuild.sh"; fi
 if git -C "$DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 && [ -f "$DIR/.git" ]; then
   bad "this is a linked worktree" "activate from the primary clone, not a worktree"; fi
 if [ -n "$(git -C "$DIR" ls-files --others --exclude-standard)" ]; then
@@ -41,13 +92,17 @@ flake_user="$(sed -nE 's/^[[:space:]]*user = "([^"]+)";.*/\1/p' "$DIR/flake.nix"
 if [ "$flake_user" = "$(whoami)" ]; then ok "flake user = $flake_user"; else
   bad "flake.nix user is '$flake_user' but you are '$(whoami)'" "edit the one user = line in flake.nix"; fi
 
-# 5. Files home-manager would need to move aside (a stale *.backup blocks the switch)
-for p in .config/ghostty .config/nvim .config/herdr .config/raycast/scripts .agents/AGENTS.md \
-         .codex/AGENTS.md .grok/AGENTS.md .grok/requirements.toml .claude/settings.json .npmrc .ssh/config; do
-  t="$HOME/$p"
-  if [ -e "$t.backup" ]; then bad "$t.backup exists; home-manager refuses to overwrite it" "rm -r '$t.backup'"; fi
-  if [ -e "$t" ] && [ ! -L "$t" ]; then warn "$t is a real file/dir" "home-manager will move it to $t.backup on switch"; fi
-done
+# 5. Check the active Home Manager generation using its own collision rules.
+home_manager_paths=(.config/ghostty .config/nvim .config/herdr .config/raycast/scripts .agents/AGENTS.md
+  .codex/AGENTS.md .grok/AGENTS.md .grok/requirements.toml .pi/agent/AGENTS.md
+  .pi/agent/settings.json .pi/agent/models.json .pi/agent/themes
+  .pi/agent/extensions/calm .pi/agent/extensions/terminal-status-title.js
+  .claude/settings.json .npmrc .ssh/config .local/bin/pstack-setup .local/bin/firstmate)
+if home_manager_files="$(current_home_manager_files "${home_manager_paths[@]}")" && [ -d "$home_manager_files" ]; then
+  check_home_manager_collisions "$home_manager_files" "$HOME" "$home_manager_files"
+else
+  warn "current Home Manager files could not be located" "the first switch will perform its own collision check"
+fi
 
 # 6. Homebrew state
 if [ -x /opt/homebrew/bin/brew ]; then
@@ -56,6 +111,11 @@ else warn "no /opt/homebrew/bin/brew" "nix-homebrew installs it on the first swi
 if command -v mas >/dev/null 2>&1; then
   if mas list 2>/dev/null | grep -q .; then ok "mas sees installed App Store apps"; else
     warn "mas lists no App Store apps" "sign in to the App Store and own the three declared masApps, or brew bundle fails on that line"; fi
+fi
+if command -v pi >/dev/null 2>&1; then
+  ok "pi $(pi --version 2>/dev/null | head -1)"
+else
+  warn "pi is not installed" "run bash '$DIR/home/bin/agent-tools' pi"
 fi
 # thaw's cask declares depends_on macos: :tahoe (26).
 macos_major="$(sw_vers -productVersion 2>/dev/null | cut -d. -f1)"
@@ -69,4 +129,9 @@ if command -v nix >/dev/null 2>&1; then
 fi
 
 [ "$fail" = 0 ] && echo "doctor: ready for ./rebuild.sh" || echo "doctor: fix the FAIL lines, then ./rebuild.sh"
-exit "$fail"
+return "$fail"
+}
+
+if [[ "${BASH_SOURCE[0]}" = "$0" ]]; then
+  main "$@"
+fi

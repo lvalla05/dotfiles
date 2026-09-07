@@ -37,7 +37,7 @@ in
     EDITOR = "nvim";
     SSH_AUTH_SOCK = opAgent;
     ORCA_TELEMETRY_DISABLED = "1";
-    BRAIN_DIR = "${config.home.homeDirectory}/orca/projects/brain";
+    BRAIN_DIR = "${config.home.homeDirectory}/orca/brain";
   };
 
   # Git identity, declared so a fresh machine commits correctly from the first
@@ -115,21 +115,29 @@ in
   home.file.".config/raycast/scripts".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/raycast/scripts";
   # pi coding agent: a minimal config (from kunchenguid/dotfiles, MIT-0), live-linked.
-  # settings.json pins two packages; models.json caps GPT-5.6 at 272K, the
-  # Codex tier boundary. Sign in with /login (ChatGPT) or API keys; Anthropic
-  # and Google forbid their subscription logins in third-party harnesses.
+  # The model picker favors Luna xhigh and Sol high. Sign in with /login for
+  # ChatGPT or xAI subscriptions; Pi stores credentials outside this repo.
+  home.file.".pi/agent/AGENTS.md".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".pi/agent/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/settings.json";
   home.file.".pi/agent/models.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/models.json";
-  home.file.".pi/agent/extensions".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/extensions";
+  # Orca adds runtime hooks beside these repository-owned extensions.
+  home.file.".pi/agent/extensions/calm".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/extensions/calm";
+  home.file.".pi/agent/extensions/terminal-status-title.js".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/extensions/terminal-status-title.js";
   home.file.".pi/agent/themes".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/themes";
-  # Pinned agent CLIs (pi, treehouse, lavish, quota, gh-axi, gnhf).
+  # Pinned agent CLIs; home/bin/agent-tools.lock is the version authority.
   # Run `agent-tools` once after the first switch and after bumping the lock.
   home.file.".local/bin/agent-tools".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/agent-tools";
+  home.file.".local/bin/pstack-setup".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/pstack-setup";
+  home.file.".local/bin/firstmate".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/bin/firstmate";
 
   # One instruction file for every harness.
   # Codex and Grok Build read AGENTS.md natively; ~/.agents/AGENTS.md is the

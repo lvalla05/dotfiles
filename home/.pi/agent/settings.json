@@ -1,4 +1,18 @@
 {
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.6-luna",
+  "defaultThinkingLevel": "xhigh",
+  "modelThinkingLevels": {
+    "openai-codex/gpt-5.6-luna": "xhigh",
+    "openai-codex/gpt-5.6-sol": "high"
+  },
+  "enabledModels": [
+    "openai-codex/gpt-5.6-luna:xhigh",
+    "openai-codex/gpt-5.6-sol:high",
+    "openrouter/deepseek/deepseek-v4-flash:high",
+    "openrouter/z-ai/glm-5.3:high",
+    "openrouter/z-ai/glm-5.3-flash:high"
+  ],
   "images": {
     "blockImages": false
   },
@@ -12,7 +26,10 @@
   "followUpMode": "all",
   "collapseChangelog": true,
   "packages": [
-    "npm:pi-web-access@0.14.0",
-    "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.6"
-  ]
+    "npm:pi-web-access@0.28.0",
+    "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.7"
+  ],
+  "enableInstallTelemetry": false,
+  "enableAnalytics": false,
+  "lastChangelogVersion": "0.85.1"
 }
